@@ -105,15 +105,14 @@ contract NFTEX is ERC721Holder, Ownable {
 
     emit MakeOrder(_token, _id, hash, msg.sender);
   }
-  //start price. end price. compare which is bigger to check if it is Dutch or English. and time.
 
+  //for testing, temporarily it is public not internal.
   function _hash(IERC721 _token, uint256 _id, address _seller) public view returns (bytes32) {
     return keccak256(abi.encodePacked(block.number, _token, _id, _seller));
   }
-  //for testing, temporarily it is public not internal.
-
-
+  
   // take order fx
+  //you have to pay only ETH for bidding and buying.
 
   //Bids must be at least 5% higher than the previous bid.
   //If someone bids in the last 5 minutes of an auction, the auction will automatically extend by 5 minutes.
@@ -121,42 +120,45 @@ contract NFTEX is ERC721Holder, Ownable {
     Order storage o = orderInfo[_order];
     uint256 endBlock = o.endBlock;
     uint256 lastBidPrice = o.lastBidPrice;
+    address lastBidder = o.lastBidder;
 
     require(o.orderType == 2, "only for English Auction");
+    require(endBlock != 0, "Canceled order");
     require(block.number <= endBlock, "It's over");
-    // require(endBlock != 0, "Canceled order");  //meaningless. if endblock == 0, blocknumber > 0, "it's over" revert.
     require(o.seller != msg.sender, "Can not bid to your order");
 
     if (lastBidPrice != 0) {
       require(msg.value >= lastBidPrice + (lastBidPrice / 20), "low price bid");  //5%
     } else {
-      require(msg.value >= o.startPrice, "low price bid");
+      require(msg.value >= o.startPrice && msg.value > 0, "low price bid");
     }
 
     if (block.number > endBlock - 20) {  //20blocks = 5 mins in Etherium.
       o.endBlock = endBlock + 20;
     }
 
-    payable(o.lastBidder).transfer(lastBidPrice);
-
     o.lastBidder = msg.sender;
     o.lastBidPrice = msg.value;
 
+    if (lastBidPrice != 0) {
+        payable(lastBidder).transfer(lastBidPrice);
+    }
+    
     emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value);
   }
 
-
-
-
   function buyItNow(bytes32 _order) payable external {
     Order storage o = orderInfo[_order];
-    require(o.endBlock > block.number, "It's over");
+    uint256 endBlock = o.endBlock;
+    require(endBlock != 0, "Canceled order");
+    require(endBlock > block.number, "It's over");
     require(o.orderType < 2, "It's a English Auction");
     require(o.isSold == false, "Already sold");
 
-
     uint256 currentPrice = getCurrentPrice(_order);
     require(msg.value >= currentPrice, "price error");
+
+    o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
     payable(o.seller).transfer(currentPrice - fee);
@@ -164,15 +166,14 @@ contract NFTEX is ERC721Holder, Ownable {
     if (msg.value > currentPrice) {
       payable(msg.sender).transfer(msg.value - currentPrice);
     }
-    o.isSold = true;
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
 
     emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice);
   }
-  //you can pay only ETH for bidding and buying.
 
-
+  //both seller and taker can call this fx in English Auction. Probably the taker(last bidder) might call this fx.
+  //In both DA and FP, buyItNow fx include claim fx.
   function claim(bytes32 _order) external {
     Order storage o = orderInfo[_order];
     address seller = o.seller;
@@ -184,41 +185,37 @@ contract NFTEX is ERC721Holder, Ownable {
     require(block.number > o.endBlock, "Not yet");
 
     IERC721 token = o.token;
+    uint256 tokenId = o.tokenId;
     uint256 lastBidPrice = o.lastBidPrice;
 
     uint256 fee = lastBidPrice * feePercent / 10000;
 
     o.isSold = true;
 
-    payable(seller).transfer(o.lastBidPrice - fee);
+    payable(seller).transfer(lastBidPrice - fee);
     payable(feeAddress).transfer(fee);
-    token.safeTransferFrom(address(this), lastBidder, o.tokenId);
+    token.safeTransferFrom(address(this), lastBidder, tokenId);
 
-    emit Claim(token, o.tokenId, _order, seller, lastBidder, lastBidPrice);
+    emit Claim(token, tokenId, _order, seller, lastBidder, lastBidPrice);
   }
-  //both seller and taker can call this fx in English Auction. Taker(last bidder) might call this fx.
-  //In both DA and FP, buyItNow is followed by claim in a single tx.
-  //3% fee to dev.
 
 
   function cancelOrder(bytes32 _order) external {
     Order storage o = orderInfo[_order];
     require(o.seller == msg.sender, "Access denied");
-    require(o.lastBidPrice == 0, "Bidding exist"); //for EA. but even in DA, FP, seller can withdraw his/her token with his fx.
+    require(o.lastBidPrice == 0, "Bidding exist"); //for EA. but even in DA, FP, seller can withdraw his/her token with this fx.
     require(o.isSold == false, "Already sold");
 
     IERC721 token = o.token;
     uint256 tokenId = o.tokenId;
 
-    o.endBlock = 0;   //0 endBlock means the order is canceled.
+    o.endBlock = 0;   //0 endBlock means the order was canceled.
 
     token.safeTransferFrom(address(this), msg.sender, tokenId);
     emit CancelOrder(token, tokenId, _order, msg.sender);
   }
 
-
   function setFeeAddress(address _feeAddress) external onlyOwner {
-    // require(owner == feeAddress, "setFeeAddress: FORBIDDEN");
     feeAddress = _feeAddress;
   }
 
@@ -226,5 +223,4 @@ contract NFTEX is ERC721Holder, Ownable {
     require(_percent <= 10000, "input value is more than 100%");
     feePercent = _percent;
   }
-
 }

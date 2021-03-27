@@ -89,7 +89,7 @@ describe("NFTEX contract", function () {
       await token.approve(ex.address, 0);
 
       await advanceBlockTo("30");
-      await ex.dutchAuction(token.address, 0, 100, 0, 131);
+      await ex.dutchAuction(token.address, 0, 100, 0, 131);   //31th block??
       let hash = await ex._hash(token.address, 0, owner.address);
 
       expect(await ex.getCurrentPrice(hash)).to.equal(100);
@@ -99,10 +99,10 @@ describe("NFTEX contract", function () {
       expect(await token.balanceOf(owner.address)).to.equal(0);
 
       await advanceBlockTo("60");
-      expect(await ex.getCurrentPrice(hash)).to.equal(71);  //??
+      expect(await ex.getCurrentPrice(hash)).to.equal(71);  //60th block??
 
       await advanceBlockTo("131");
-      expect(await ex.getCurrentPrice(hash)).to.equal(0);   //??
+      expect(await ex.getCurrentPrice(hash)).to.equal(0);   //131th block??
     });
 
     it("English Auction", async function () {
@@ -223,7 +223,7 @@ describe("NFTEX contract", function () {
 
       await expect(
         ex.connect(addr3).buyItNow(hash2)
-      ).to.be.revertedWith("It's over");
+      ).to.be.revertedWith("Canceled order");
 
       await ex.connect(addr3).bid(hash1, {value : 30});
 
@@ -269,7 +269,13 @@ describe("NFTEX contract", function () {
       let hash3 = await ex._hash(token.address, 11, addr1.address);
 
       await ex.connect(addr1).cancelOrder(hash3);
-      await expect(ex.bid(hash3)).to.be.revertedWith("It's over");
+      await expect(ex.bid(hash3)).to.be.revertedWith("Canceled order");
+
+      await token.connect(addr1).approve(ex.address, 11);
+      await ex.connect(addr1).englishAuction(token.address, 11, 20, 600);
+      let hash4 = await ex._hash(token.address, 11, addr1.address);
+
+      await expect(ex.bid(hash4, {value : 0})).to.be.revertedWith("low price bid");
 
       await expect(ex.connect(addr1).bid(hash0, {value : 10})).to.be.revertedWith("low price bid");
       await ex.connect(addr1).bid(hash0, {value : 40});
@@ -318,20 +324,18 @@ describe("NFTEX contract", function () {
 
       await ex.connect(addr1).englishAuction(token.address, 11, 20, 630);
       let hash3 = await ex._hash(token.address, 11, addr1.address);
-
+      ////////606
       await ex.connect(addr1).bid(hash0, {value : 40});
       await ex.connect(addr3).bid(hash3, {value : 30});
-
       await expect(ex.claim(hash0)).to.be.revertedWith("Not yet");
 
-      await advanceBlockTo("631");
+      await advanceBlockTo("630");
 
       await expect(ex.connect(addr2).claim(hash0)).to.be.revertedWith("Access denied");
       await expect(ex.connect(addr1).claim(hash1)).to.be.revertedWith("This function is for English Auction");
       await expect(ex.connect(addr2).claim(hash2)).to.be.revertedWith("This function is for English Auction");
       
       await ex.setFeeAddress(addr3.address);
-
       expect(await token.ownerOf(0)).to.equal(ex.address);
       expect(await token.ownerOf(11)).to.equal(ex.address);
       await expect(() => ex.connect(addr1).claim(hash0)).to.changeEtherBalances([owner, addr3, ex], [38, 2, -40]);
@@ -342,10 +346,8 @@ describe("NFTEX contract", function () {
       expect(await token.ownerOf(11)).to.equal(addr3.address);
 
       await expect(ex.claim(hash0)).to.be.revertedWith("Already sold");
-
     });
   });
-
 
   describe("Buy It Now Order", function () {
     it("BIN_Fixed Price", async function() {
@@ -437,7 +439,7 @@ describe("NFTEX contract", function () {
       });
 
   });
-
+  
   });
       // expect(await ethers.provider.getBlockNumber()).to.equal(600);
 //expect(await (await web3.eth.getBalance(addr1)).to.equal(10000)); how to check exact ETHbalance

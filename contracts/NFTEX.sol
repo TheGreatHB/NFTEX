@@ -37,7 +37,7 @@ contract NFTEX is ERC721Holder, Ownable {
 
   constructor(uint16 _feePercent) {
     require(_feePercent <= 10000, "input value is more than 100%");
-    feeAddress = payable(msg.sender);
+    feeAddress = msg.sender;
     feePercent = _feePercent;
   }
 
@@ -141,7 +141,7 @@ contract NFTEX is ERC721Holder, Ownable {
     o.lastBidPrice = msg.value;
 
     if (lastBidPrice != 0) {
-        payable(lastBidder).transfer(lastBidPrice);
+      safeTransfer(lastBidder, lastBidPrice);
     }
     
     emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value);
@@ -161,10 +161,10 @@ contract NFTEX is ERC721Holder, Ownable {
     o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
-    payable(o.seller).transfer(currentPrice - fee);
-    payable(feeAddress).transfer(fee);
+    safeTransfer(o.seller, currentPrice - fee);
+    safeTransfer(feeAddress, fee);
     if (msg.value > currentPrice) {
-      payable(msg.sender).transfer(msg.value - currentPrice);
+      safeTransfer(msg.sender, msg.value - currentPrice);
     }
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
@@ -192,8 +192,8 @@ contract NFTEX is ERC721Holder, Ownable {
 
     o.isSold = true;
 
-    payable(seller).transfer(lastBidPrice - fee);
-    payable(feeAddress).transfer(fee);
+    safeTransfer(seller, lastBidPrice - fee);
+    safeTransfer(feeAddress, fee);
     token.safeTransferFrom(address(this), lastBidder, tokenId);
 
     emit Claim(token, tokenId, _order, seller, lastBidder, lastBidPrice);
@@ -222,5 +222,10 @@ contract NFTEX is ERC721Holder, Ownable {
   function updateFeePercent(uint16 _percent) external onlyOwner {
     require(_percent <= 10000, "input value is more than 100%");
     feePercent = _percent;
+  }
+
+  function safeTransfer(address _to, uint256 _amount) internal {
+    (bool success,) = _to.call{value : _amount}("");
+    require(success, 'Transfer failed');
   }
 }

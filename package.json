@@ -1,7 +1,6 @@
 {
   "name": "NFTEX",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -16,6 +15,19 @@
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.32",
-    "hardhat": "^2.1.1"
-  }
+    "hardhat": "^2.1.2",
+    "solidity-coverage": "^0.7.16"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheGreatHB/NFTEX.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheGreatHB/NFTEX/issues"
+  },
+  "homepage": "https://github.com/TheGreatHB/NFTEX#readme",
+  "description": ""
 }

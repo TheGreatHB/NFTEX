@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.3;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 
 contract NFTEX is ERC721Holder, Ownable {
 
@@ -96,7 +95,6 @@ contract NFTEX is ERC721Holder, Ownable {
     //push
     bytes32 hash = _hash(_token, _id, msg.sender);
     orderInfo[hash] = Order(_orderType, msg.sender, _token, _id, _startPrice, _endPrice, block.number, _endBlock, 0, address(0), false);
-
     orderIdByToken[_token][_id].push(hash);
     orderIdBySeller[msg.sender].push(hash);
 
@@ -106,13 +104,17 @@ contract NFTEX is ERC721Holder, Ownable {
     emit MakeOrder(_token, _id, hash, msg.sender);
   }
 
-  //for testing, temporarily it is public not internal.
-  function _hash(IERC721 _token, uint256 _id, address _seller) public view returns (bytes32) {
+  function _hash(IERC721 _token, uint256 _id, address _seller) internal view returns (bytes32) {
     return keccak256(abi.encodePacked(block.number, _token, _id, _seller));
   }
   
   // take order fx
   //you have to pay only ETH for bidding and buying.
+
+  //In this contract, since send function is used instead of transfer or low-level call function,
+  //if a participant is a contract, it must have receive payable function.
+  //But if it has some code in either receive or fallback fx, they might not be able to receive their ETH.
+  //Even though some contracts can't receive their ETH, the transaction won't be failed.
 
   //Bids must be at least 5% higher than the previous bid.
   //If someone bids in the last 5 minutes of an auction, the auction will automatically extend by 5 minutes.
@@ -141,7 +143,7 @@ contract NFTEX is ERC721Holder, Ownable {
     o.lastBidPrice = msg.value;
 
     if (lastBidPrice != 0) {
-      safeTransfer(lastBidder, lastBidPrice);
+      payable(lastBidder).send(lastBidPrice);
     }
     
     emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value);
@@ -161,10 +163,10 @@ contract NFTEX is ERC721Holder, Ownable {
     o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
-    safeTransfer(o.seller, currentPrice - fee);
-    safeTransfer(feeAddress, fee);
+    payable(o.seller).send(currentPrice - fee);
+    payable(feeAddress).send(fee);
     if (msg.value > currentPrice) {
-      safeTransfer(msg.sender, msg.value - currentPrice);
+      payable(msg.sender).send(msg.value - currentPrice);
     }
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
@@ -192,8 +194,8 @@ contract NFTEX is ERC721Holder, Ownable {
 
     o.isSold = true;
 
-    safeTransfer(seller, lastBidPrice - fee);
-    safeTransfer(feeAddress, fee);
+    payable(seller).send(lastBidPrice - fee);
+    payable(feeAddress).send(fee);
     token.safeTransferFrom(address(this), lastBidder, tokenId);
 
     emit Claim(token, tokenId, _order, seller, lastBidder, lastBidPrice);
@@ -215,6 +217,8 @@ contract NFTEX is ERC721Holder, Ownable {
     emit CancelOrder(token, tokenId, _order, msg.sender);
   }
 
+  //feeAddress must be either an EOA or a contract must have payable receive fx and doesn't have some codes in that fx.
+  //If not, it might be that it won't be receive any fee.
   function setFeeAddress(address _feeAddress) external onlyOwner {
     feeAddress = _feeAddress;
   }
@@ -224,8 +228,4 @@ contract NFTEX is ERC721Holder, Ownable {
     feePercent = _percent;
   }
 
-  function safeTransfer(address _to, uint256 _amount) internal {
-    (bool success,) = _to.call{value : _amount}("");
-    require(success, 'Transfer failed');
-  }
 }

@@ -32,6 +32,9 @@ Tests are located in the [test](https://github.com/TheGreatHB/NFTEX/tree/main/te
 
 * ```npx hardhat test```
 
+### Test Coverage
+<img src="https://user-images.githubusercontent.com/74754077/113394747-bfc9fb80-93d3-11eb-8551-de58bf8b024c.png" width="600">
+
 ## Contributions
 **Please open all pull requests against the `main` branch.**
 

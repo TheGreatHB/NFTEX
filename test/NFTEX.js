@@ -99,7 +99,7 @@ describe("NFTEX contract", function () {
 
       await advanceBlockTo("30"); //after finishing this, blocknumber : 30. next tx will be 31. before the next tx, block number is still 30.
       await ex.dutchAuction(token.address, 0, 100, 0, 131); //this block is 31. since it is in tx. 
-      let hash = await _hash(token.address, 0, owner.address);
+      const hash = await _hash(token.address, 0, owner.address);
 
       expect(await ex.getCurrentPrice(hash)).to.equal(100);   //31
       expect(await ex.tokenOrderLength(token.address, 0)).to.equal(1);  //31
@@ -128,7 +128,7 @@ describe("NFTEX contract", function () {
       await token.approve(ex.address, 0);
 
       await ex.englishAuction(token.address, 0, 10, 300);
-      let hash = await _hash(token.address, 0, owner.address);
+      const hash = await _hash(token.address, 0, owner.address);
 
       expect(await ex.getCurrentPrice(hash)).to.equal(10);
       expect(await ex.tokenOrderLength(token.address, 0)).to.equal(1);
@@ -154,7 +154,7 @@ describe("NFTEX contract", function () {
       await token.approve(ex.address, 0);
 
       await ex.fixedPrice(token.address, 0, 50, 350);
-      let hash = await _hash(token.address, 0, owner.address);
+      const hash = await _hash(token.address, 0, owner.address);
 
       expect(await ex.getCurrentPrice(hash)).to.equal(50);
       expect(await ex.tokenOrderLength(token.address, 0)).to.equal(1);
@@ -206,16 +206,16 @@ describe("NFTEX contract", function () {
       await token.connect(addr1).approve(ex.address, 11);
 
       await ex.fixedPrice(token.address, 0, 50, 500);
-      let hash0 = await _hash(token.address, 0, owner.address);
+      const hash0 = await _hash(token.address, 0, owner.address);
 
       await ex.connect(addr1).englishAuction(token.address, 1, 20, 600);
-      let hash1 = await _hash(token.address, 1, addr1.address);
+      const hash1 = await _hash(token.address, 1, addr1.address);
 
       await ex.connect(addr2).dutchAuction(token.address, 2, 100, 50, 550);
-      let hash2 = await _hash(token.address, 2, addr2.address);
+      const hash2 = await _hash(token.address, 2, addr2.address);
 
       await ex.connect(addr1).englishAuction(token.address, 11, 20, 400);
-      let hash3 = await _hash(token.address, 11, addr1.address);
+      const hash3 = await _hash(token.address, 11, addr1.address);
 
       await expect(
         ex.connect(addr3).cancelOrder(hash0)
@@ -261,13 +261,13 @@ describe("NFTEX contract", function () {
       await token.connect(addr2).approve(ex.address, 2);
 
       await ex.englishAuction(token.address, 0, 20, 500);
-      let hash0 = await _hash(token.address, 0, owner.address);
+      const hash0 = await _hash(token.address, 0, owner.address);
 
       await ex.connect(addr1).fixedPrice(token.address, 1, 50, 500);
-      let hash1 = await _hash(token.address, 1, addr1.address);
+      const hash1 = await _hash(token.address, 1, addr1.address);
 
       await ex.connect(addr2).dutchAuction(token.address, 2, 100, 50, 500);
-      let hash2 = await _hash(token.address, 2, addr2.address);
+      const hash2 = await _hash(token.address, 2, addr2.address);
 
       await expect(ex.bid(hash1)).to.be.revertedWith("only for English Auction");
       await expect(ex.bid(hash2)).to.be.revertedWith("only for English Auction");
@@ -275,14 +275,14 @@ describe("NFTEX contract", function () {
 
       await token.connect(addr1).approve(ex.address, 11);
       await ex.connect(addr1).englishAuction(token.address, 11, 20, 540);
-      let hash3 = await _hash(token.address, 11, addr1.address);
+      const hash3 = await _hash(token.address, 11, addr1.address);
 
       await ex.connect(addr1).cancelOrder(hash3);
       await expect(ex.bid(hash3)).to.be.revertedWith("Canceled order");
 
       await token.connect(addr1).approve(ex.address, 11);
       await ex.connect(addr1).englishAuction(token.address, 11, 20, 600);
-      let hash4 = await _hash(token.address, 11, addr1.address);
+      const hash4 = await _hash(token.address, 11, addr1.address);
 
       await expect(ex.bid(hash4, {value : 0})).to.be.revertedWith("low price bid");
 
@@ -298,7 +298,7 @@ describe("NFTEX contract", function () {
     it("Auction extension", async function() {
       await token.connect(addr1).approve(ex.address, 1);
       await ex.connect(addr1).englishAuction(token.address, 1, 20, 550);
-      let hash = await _hash(token.address, 1, addr1.address);
+      const hash = await _hash(token.address, 1, addr1.address);
 
       await expect(() => ex.connect(addr3).bid(hash, {value : 40})).to.changeEtherBalances([addr3, ex], [-40, 40]);
       await expect(() => ex.connect(addr2).bid(hash, {value : 50})).to.changeEtherBalances([addr2, addr3, ex], [-50, 40, 10]);
@@ -323,16 +323,16 @@ describe("NFTEX contract", function () {
       await token.connect(addr1).approve(ex.address, 11);
 
       await ex.englishAuction(token.address, 0, 20, 630);
-      let hash0 = await _hash(token.address, 0, owner.address);
+      const hash0 = await _hash(token.address, 0, owner.address);
 
       await ex.connect(addr1).fixedPrice(token.address, 1, 50, 630);
-      let hash1 = await _hash(token.address, 1, addr1.address);
+      const hash1 = await _hash(token.address, 1, addr1.address);
 
       await ex.connect(addr2).dutchAuction(token.address, 2, 100, 50, 630);
-      let hash2 = await _hash(token.address, 2, addr2.address);
+      const hash2 = await _hash(token.address, 2, addr2.address);
 
       await ex.connect(addr1).englishAuction(token.address, 11, 20, 630);
-      let hash3 = await _hash(token.address, 11, addr1.address);
+      const hash3 = await _hash(token.address, 11, addr1.address);
       
       await ex.connect(addr1).bid(hash0, {value : 40});
       await ex.connect(addr3).bid(hash3, {value : 30});
@@ -366,16 +366,16 @@ describe("NFTEX contract", function () {
       await token.connect(addr2).approve(ex.address, 2);
 
       await ex.englishAuction(token.address, 0, 20, 680);
-      let hash0 = await _hash(token.address, 0, owner.address);
+      const hash0 = await _hash(token.address, 0, owner.address);
 
       await ex.connect(addr1).fixedPrice(token.address, 1, 50, 660);
-      let hash1 = await _hash(token.address, 1, addr1.address);
+      const hash1 = await _hash(token.address, 1, addr1.address);
 
       await ex.connect(addr1).fixedPrice(token.address, 11, 50, 680);
-      let hash2 = await _hash(token.address, 11, addr1.address);
+      const hash2 = await _hash(token.address, 11, addr1.address);
 
       await ex.connect(addr2).fixedPrice(token.address, 2, 60, 680);
-      let hash3 = await _hash(token.address, 2, addr2.address);
+      const hash3 = await _hash(token.address, 2, addr2.address);
 
       await advanceBlockTo("661");
       await expect(ex.connect(addr2).buyItNow(hash1)).to.be.revertedWith("It's over");
@@ -397,7 +397,7 @@ describe("NFTEX contract", function () {
       await ex.connect(addr1).cancelOrder(hash1);
       await token.connect(addr1).approve(ex.address, 1);
       await ex.connect(addr1).fixedPrice(token.address, 1, 20, 680);
-      let hash4 = await _hash(token.address, 1, addr1.address);
+      const hash4 = await _hash(token.address, 1, addr1.address);
 
       await expect(() => ex.connect(addr1).buyItNow(hash4, {value : 50})).to.changeEtherBalances([owner, addr1], [1, -1]);
 
@@ -410,16 +410,16 @@ describe("NFTEX contract", function () {
       await token.connect(addr2).approve(ex.address, 2);
 
       await ex.dutchAuction(token.address, 0, 20, 0, 690);  //682
-      let hash0 = await _hash(token.address, 0, owner.address);
+      const hash0 = await _hash(token.address, 0, owner.address);
 
       await ex.connect(addr1).dutchAuction(token.address, 1, 100, 50, 732); //683
-      let hash1 = await _hash(token.address, 1, addr1.address);
+      const hash1 = await _hash(token.address, 1, addr1.address);
 
       await ex.connect(addr1).dutchAuction(token.address, 11, 500, 150, 750); //684
-      let hash2 = await _hash(token.address, 11, addr1.address);
+      const hash2 = await _hash(token.address, 11, addr1.address);
 
       await ex.connect(addr2).dutchAuction(token.address, 2, 300, 150, 734);  //685
-      let hash3 = await _hash(token.address, 2, addr2.address);
+      const hash3 = await _hash(token.address, 2, addr2.address);
 
       await advanceBlockTo("691");
       await expect(ex.connect(addr2).buyItNow(hash0)).to.be.revertedWith("It's over");
@@ -455,7 +455,7 @@ describe("NFTEX contract", function () {
 
       await token.approve(ex.address, 0);
       await ex.englishAuction(token.address, 0, 20, 1000);
-      let hash = await _hash(token.address, 0,owner.address);
+      const hash = await _hash(token.address, 0,owner.address);
       await ex.connect(addr1).bid(hash, {value:50});
 
       await ca1.connect(addr3).bid(hash, {value:100});
@@ -472,9 +472,9 @@ describe("NFTEX contract", function () {
       await token.connect(addr1).approve(ex.address, 11);
 
       await ex.connect(addr1).fixedPrice(token.address, 1, 1000, 1000);
-      let hash1 = _hash(token.address, 1, addr1.address);
+      const hash1 = _hash(token.address, 1, addr1.address);
       await ex.connect(addr1).fixedPrice(token.address, 11, 1000, 1000);
-      let hash2 = _hash(token.address, 11, addr1.address);
+      const hash2 = _hash(token.address, 11, addr1.address);
 
       await ex.setFeeAddress(ca1.address);
       expect (await ex.feeAddress()).to.equal(ca1.address);

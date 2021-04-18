@@ -1,6 +1,16 @@
-node_modules
-.history
+#History
+.history/
+
+#VScode
+.vscode/
+
+# Node
+node_modules/
+
+# Hardhat
 cache/
+artifacts/
+
+# Coverage
 coverage/
 coverage.json
-.solcover.js

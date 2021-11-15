@@ -15,4 +15,8 @@ artifacts/
 coverage/
 coverage.json
 
+#Truffle
+
+build/
+
 .env

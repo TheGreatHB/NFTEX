@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "hardhat/console.sol";
 
-contract NFTEX is ERC721Holder, Ownable {
+contract NFTEX_test is ERC721Holder, Ownable {
 
   struct Order {
     uint8 orderType;  //0:Fixed Price, 1:Dutch Auction, 2:English Auction

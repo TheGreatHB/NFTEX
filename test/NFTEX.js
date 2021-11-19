@@ -24,6 +24,7 @@ describe("NFTEX contract", function () {
   before(async function () {
     NFTEX = await ethers.getContractFactory("NFTEX");
     Token = await ethers.getContractFactory("Token");
+    AnconNFT = await ethers.getContractFactory("AnconNFT");
 
     [owner, addr1, addr2, addr3] = await ethers.getSigners();
 
@@ -34,6 +35,7 @@ describe("NFTEX contract", function () {
   beforeEach(async function () {
     ex = await NFTEX.connect(owner).deploy(500);
     token = await Token.connect(owner).deploy();
+    anconNFT = await AnconNFT.connect(owner).deploy("AnconTest","AT","0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199","0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199");
 
     await token.mint(owner.address, 0);
     await token.mint(addr1.address, 1);

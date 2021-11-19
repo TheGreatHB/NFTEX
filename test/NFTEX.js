@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 
 describe("NFTEX contract", function () {
 
-  let NFTEX, ex, token, Token, owner, addr1, addr2, addr3;
+  let NFTEX, ex, token, Token, owner, addr1, addr2, addr3, addr4, AnconToken, anconToken;
 
   async function advanceBlockTo(blockNumber) {
     for (let i = await ethers.provider.getBlockNumber(); i < blockNumber; i++) {
@@ -25,8 +25,9 @@ describe("NFTEX contract", function () {
     NFTEX = await ethers.getContractFactory("NFTEX");
     Token = await ethers.getContractFactory("Token");
     AnconNFT = await ethers.getContractFactory("AnconNFT");
+    AnconToken = await ethers.getContractFactory("ANCON");
 
-    [owner, addr1, addr2, addr3] = await ethers.getSigners();
+    [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
 
     await expect(NFTEX.connect(owner).deploy(11000)
     ).to.be.revertedWith("input value is more than 100%"); 
@@ -35,12 +36,16 @@ describe("NFTEX contract", function () {
   beforeEach(async function () {
     ex = await NFTEX.connect(owner).deploy(500);
     token = await Token.connect(owner).deploy();
-    anconNFT = await AnconNFT.connect(owner).deploy("AnconTest","AT","0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199","0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199");
+    anconToken = await AnconToken.connect(owner).deploy();
+    anconNFT = await AnconNFT.connect(owner).deploy("AnconTest","AT", anconToken.address,"0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199");
 
     await token.mint(owner.address, 0);
     await token.mint(addr1.address, 1);
     await token.mint(addr1.address, 11);
     await token.mint(addr2.address, 2);
+
+    await anconNFT.mint(addr4.address, 1);
+
   });
 
   describe("Deployment", function () {
@@ -50,10 +55,17 @@ describe("NFTEX contract", function () {
       const addr1Balance = await token.balanceOf(addr1.address);
       const addr2Balance = await token.balanceOf(addr2.address);
       const addr3Balance = await token.balanceOf(addr3.address);
+
+      const addr4AnconNFTBalance = await anconNFT.balanceOf(addr4.address)
+      const addr4AnconTokenBalance = await anconToken.balanceOf(addr4.address)
+
       expect(ownerBalance).to.equal(1);
       expect(addr1Balance).to.equal(2);
       expect(addr2Balance).to.equal(1);
       expect(addr3Balance).to.equal(0);
+      
+      expect(addr4AnconNFTBalance).to.equal(1);
+      // expect(ownerAnconTokenBalance).to.equal(100);
     });
 
     it("variables and functions about fee", async function () {

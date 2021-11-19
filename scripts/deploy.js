@@ -18,22 +18,28 @@ async function main() {
   // We get the contracts to deploy
   const NFTEX = await hre.ethers.getContractFactory("NFTEX");
   const AnconNFT = await ethers.getContractFactory("AnconNFT");
+  const AnconToken = await ethers.getContractFactory("ANCON");
 
   console.log("Deploying NFTEX...");
   const ex = await NFTEX.connect(owner).deploy(500);
 
+  console.log("Deploying Ancon Token...");
+  const anconToken = await AnconToken.connect(owner).deploy();
+
   console.log("Deploying AnconNFT...");
   const anconNFT = await AnconNFT.connect(owner).deploy(
-    "AnconTest",
+    "AnconTestNFT",
     "AT",
-    "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199",
+    anconToken.address,
     "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199"
   );
 
   await ex.deployed();
+  await anconToken.deployed();
   await anconNFT.deployed();
 
   console.log("NFTEX contract deployed to:", ex.address);
+  console.log("Ancon Token contract deployed to:", anconToken.address);
   console.log("AnconNFT contract deployed to:", anconNFT.address);
 }
 

@@ -5,13 +5,13 @@
   "scripts": {
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
-    "node": "npx hardhat node"
+    "node": "npx hardhat node",
+    "deploy:local": "npx hardhat run --network local scripts/deploy.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.7",
     "@nomiclabs/hardhat-truffle5": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -21,7 +21,6 @@
     "chai": "^4.3.4",
     "dotenv": "^8.2.0",
     "ethereum-waffle": "^3.3.0",
-    "ethers": "^5.0.32",
     "hardhat": "^2.1.2",
     "solidity-coverage": "^0.7.16",
     "truffle": "^5.4.19",
@@ -41,6 +40,8 @@
   "homepage": "https://github.com/TheGreatHB/NFTEX#readme",
   "description": "",
   "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "ethers": "^5.5.1",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
   }

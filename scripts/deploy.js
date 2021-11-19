@@ -1,4 +1,4 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional 
+// We require the Hardhat Runtime Environment explicitly here. This is optional
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
@@ -9,26 +9,39 @@ async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
-  // If this script is run directly using `node` you may want to call compile 
+  // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
   [owner, addr1, addr2, addr3] = await ethers.getSigners();
 
-  // We get the contract to deploy
+  // We get the contracts to deploy
   const NFTEX = await hre.ethers.getContractFactory("NFTEX");
+  const AnconNFT = await ethers.getContractFactory("AnconNFT");
+
+  console.log("Deploying NFTEX...");
   const ex = await NFTEX.connect(owner).deploy(500);
 
+  console.log("Deploying AnconNFT...");
+  const anconNFT = await AnconNFT.connect(owner).deploy(
+    "AnconTest",
+    "AT",
+    "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199",
+    "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199"
+  );
+
   await ex.deployed();
+  await anconNFT.deployed();
 
   console.log("NFTEX contract deployed to:", ex.address);
+  console.log("AnconNFT contract deployed to:", anconNFT.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });

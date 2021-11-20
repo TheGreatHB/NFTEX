@@ -6,7 +6,8 @@
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
-    "deploy:local": "npx hardhat run --network local scripts/deploy.js"
+    "deploy:local": "npx hardhat run --network local scripts/deploy.js",
+    "console:local": "npx hardhat console --network local"
   },
   "keywords": [],
   "author": "",

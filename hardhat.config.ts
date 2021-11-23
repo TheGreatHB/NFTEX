@@ -48,6 +48,10 @@ module.exports = {
       gas: 10000000,
       network_id: '*', // eslint-disable-line camelcase
     },
+    bsctestnet: {
+        url: `https://bsc-dataseed1.binance.org`,
+        accounts: { mnemonic: process.env.BSCTESTNET_MNEMONIC },
+    },
     // bsctestnet: {
     //   url: `${env[EnvNames.RPC_URL_BSCTESTNET]}`,
     //   accounts: [`0x${env[EnvNames.OWNER_WALLET_PK]}`],

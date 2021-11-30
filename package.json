@@ -8,7 +8,8 @@
     "node": "npx hardhat node",
     "deploy:local": "npx hardhat run --network local scripts/deploy.js",
     "deploy:bsctestnet": "npx hardhat run --network bsctestnet scripts/deploy.js",
-    "console:local": "npx hardhat console --network local"
+    "console:local": "npx hardhat console --network local",
+    "console:bsctestnet": "npx hardhat console --network bsctestnet"
   },
   "keywords": [],
   "author": "",

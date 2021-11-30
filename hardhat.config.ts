@@ -49,7 +49,7 @@ module.exports = {
       network_id: '*', // eslint-disable-line camelcase
     },
     bsctestnet: {
-        url: `https://bsc-dataseed1.binance.org`,
+        url: process.env.RPC_URL_BSCTESTNET,
         accounts: { mnemonic: process.env.BSCTESTNET_MNEMONIC },
     },
     // bsctestnet: {

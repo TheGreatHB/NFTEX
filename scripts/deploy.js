@@ -16,7 +16,7 @@ async function main() {
   [owner, addr1, addr2, addr3] = await ethers.getSigners();
 
   // We get the contracts to deploy
-  const NFTEX = await hre.ethers.getContractFactory("NFTEX");
+  const NFTEX = await ethers.getContractFactory("NFTEX");
   const AnconNFT = await ethers.getContractFactory("AnconNFT");
   const AnconToken = await ethers.getContractFactory("ANCON");
 

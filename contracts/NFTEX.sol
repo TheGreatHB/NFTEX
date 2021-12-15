@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.3;
+pragma solidity =0.8.7;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -24,6 +25,7 @@ contract NFTEX is ERC721Holder, Ownable {
   mapping (IERC721 => mapping (uint256 => bytes32[])) public orderIdByToken;
   mapping (address => bytes32[]) public orderIdBySeller;
   mapping (bytes32 => Order) public orderInfo;
+  // mapping (address => monto) public account;
 
   address public feeAddress;
   uint16 public feePercent;
@@ -169,8 +171,8 @@ contract NFTEX is ERC721Holder, Ownable {
     o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
-    nativeCoin.safeTransfer(o.seller, currentPrice - fee);
-    nativeCoin.safeTransfer(feeAddress, fee);
+    nativeCoin.transfer(o.seller, currentPrice - fee);
+    nativeCoin.transfer(feeAddress, fee);
     
     // verificar utilizacion de token nativo del blockchain
     /* if (msg.value > currentPrice) {
@@ -180,11 +182,12 @@ contract NFTEX is ERC721Holder, Ownable {
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
 
     emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice);
+    //Save on Stats.sol
   }
 
   //both seller and taker can call this fx in English Auction. Probably the taker(last bidder) might call this fx.
   //In both DA and FP, buyItNow fx include claim fx.
-  function claim(bytes32 _order) external {
+  function claim(bytes32 _order) public {
     Order storage o = orderInfo[_order];
     address seller = o.seller;
     address lastBidder = o.lastBidder;
@@ -207,6 +210,7 @@ contract NFTEX is ERC721Holder, Ownable {
     token.safeTransferFrom(address(this), lastBidder, tokenId);
 
     emit Claim(token, tokenId, _order, seller, lastBidder, lastBidPrice);
+    //Save on Stats.sol
   }
 
 

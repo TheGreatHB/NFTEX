@@ -21,7 +21,7 @@ contract AnconNFT is
 {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-    IERC20 public stablecoin;
+    IERC20 public nativeCoin;
     address public verifierAddress;
     uint256 public serviceFeeForPaymentAddress = 0;
     uint256 public serviceFeeForContract = 0;
@@ -43,7 +43,7 @@ contract AnconNFT is
         address tokenERC20,
         address verifierAddr
     ) ERC721(name, symbol) {
-        stablecoin = IERC20(tokenERC20);
+        nativeCoin = IERC20(tokenERC20);
         verifierAddress = verifierAddr;
     }
 
@@ -145,7 +145,7 @@ contract AnconNFT is
     function paymentBeforeMint(address tokenHolder) internal virtual {
         // Transfer tokens to pay service fee
         require(
-            stablecoin.transferFrom(
+            nativeCoin.transferFrom(
                 tokenHolder,
                 address(this),
                 serviceFeeForContract
@@ -161,9 +161,9 @@ contract AnconNFT is
     }
 
     function withdrawBalance(address payable payee) public onlyOwner {
-        uint256 balance = stablecoin.balanceOf(address(this));
-
-        require(stablecoin.transfer(payee, balance), "XDV: Transfer failed");
+        uint256 balance = nativeCoin.balanceOf(address(this));
+    
+        require(nativeCoin.transfer(payee, balance), "XDV: Transfer failed");
 
         emit Withdrawn(payee, balance);
     }

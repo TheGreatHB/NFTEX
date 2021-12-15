@@ -27,6 +27,7 @@ contract NFTEX is ERC721Holder, Ownable {
 
   address public feeAddress;
   uint16 public feePercent;
+  IERC20 public nativeCoin;
 
   event MakeOrder(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller);
   event CancelOrder(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller);
@@ -34,10 +35,13 @@ contract NFTEX is ERC721Holder, Ownable {
   event Claim(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price);
 
 
-  constructor(uint16 _feePercent) {
+  constructor(
+    address tokenERC20,
+    uint16 _feePercent) {
     require(_feePercent <= 10000, "input value is more than 100%");
     feeAddress = msg.sender;
     feePercent = _feePercent;
+    nativeCoin = IERC20(tokenERC20);
   }
 
 
@@ -90,11 +94,11 @@ contract NFTEX is ERC721Holder, Ownable {
     uint256 _endPrice,
     uint256 _endBlock
   ) internal {
-    require(_endBlock > block.number, "Duration must be more than zero");
+    require(_endBlock > block.timestamp, "Duration must be more than zero");
 
     //push
     bytes32 hash = _hash(_token, _id, msg.sender);
-    orderInfo[hash] = Order(_orderType, msg.sender, _token, _id, _startPrice, _endPrice, block.number, _endBlock, 0, address(0), false);
+    orderInfo[hash] = Order(_orderType, msg.sender, _token, _id, _startPrice, _endPrice, block.timestamp, _endBlock, 0, address(0), false);
     orderIdByToken[_token][_id].push(hash);
     orderIdBySeller[msg.sender].push(hash);
 
@@ -105,7 +109,7 @@ contract NFTEX is ERC721Holder, Ownable {
   }
 
   function _hash(IERC721 _token, uint256 _id, address _seller) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked(block.number, _token, _id, _seller));
+    return keccak256(abi.encodePacked(block.timestamp, _token, _id, _seller));
   }
   
   // take order fx
@@ -153,21 +157,25 @@ contract NFTEX is ERC721Holder, Ownable {
     Order storage o = orderInfo[_order];
     uint256 endBlock = o.endBlock;
     require(endBlock != 0, "Canceled order");
-    require(endBlock > block.number, "It's over");
-    require(o.orderType < 2, "It's a English Auction");
+    require(endBlock > block.timestamp, "It's over");
+    require(o.orderType == 0, "It's not a fix price order");
     require(o.isSold == false, "Already sold");
 
     uint256 currentPrice = getCurrentPrice(_order);
-    require(msg.value >= currentPrice, "price error");
+
+    // verificar utilizacion de token nativo del blockchain
+    // require(msg.value >= currentPrice, "price error");
 
     o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
-    payable(o.seller).send(currentPrice - fee);
-    payable(feeAddress).send(fee);
-    if (msg.value > currentPrice) {
+    nativeCoin.safeTransfer(o.seller, currentPrice - fee);
+    nativeCoin.safeTransfer(feeAddress, fee);
+    
+    // verificar utilizacion de token nativo del blockchain
+    /* if (msg.value > currentPrice) {
       payable(msg.sender).send(msg.value - currentPrice);
-    }
+    } */
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
 

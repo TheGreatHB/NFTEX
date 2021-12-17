@@ -1,6 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const web3 = require("web3");
+const Web3 = require("web3");
+require('dotenv').config();
+// const AnconNFT = require("../contracts/AnconNFT.sol/AnconNFT.json");
 const NFTEXjson = require("../artifacts/contracts/NFTEX.sol/NFTEX.json")
 
 describe("NFTEX contract", function () {
@@ -43,13 +45,15 @@ describe("NFTEX contract", function () {
 
     [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
 
-    await expect(NFTEX.connect(owner).deploy(11000)).to.be.revertedWith(
+    anconToken = await AnconToken.connect(owner).deploy();
+
+    await expect(NFTEX.connect(owner).deploy(anconToken.address, 11000)).to.be.revertedWith(
       "input value is more than 100%"
     );
   });
 
   beforeEach(async function () {
-    ex = await NFTEX.connect(owner).deploy(500);
+    ex = await NFTEX.connect(owner).deploy(anconToken.address, 500);
     // token = await Token.connect(owner).deploy();
     anconToken = await AnconToken.connect(owner).deploy();
     anconNFT = await AnconNFT.connect(owner).deploy(
@@ -59,12 +63,13 @@ describe("NFTEX contract", function () {
       "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199"
     );
 
-    await anconNFT.mint(owner.address, 0);
-    await anconNFT.mint(addr1.address, 1);
-    await anconNFT.mint(addr1.address, 11);
-    await anconNFT.mint(addr2.address, 2);
+    await anconNFT.mint(owner.address, 0,"","","","","",ethers.utils.hexlify(0));
+    console.log("Minting to owner")
+    await anconNFT.mint(addr1.address, 1,"","","","","",ethers.utils.hexlify(0));
+    await anconNFT.mint(addr1.address, 11,"","","","","",ethers.utils.hexlify(0));
+    await anconNFT.mint(addr2.address, 2,"","","","","",ethers.utils.hexlify(0));
 
-    await anconNFT.mint(addr4.address, 1);
+    await anconNFT.mint(addr4.address, 1,"","","","","",ethers.utils.hexlify(0));
   });
 
   describe("Deployment", function () {

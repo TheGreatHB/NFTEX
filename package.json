@@ -28,7 +28,8 @@
     "solidity-coverage": "^0.7.16",
     "truffle": "^5.4.19",
     "truffle-contract-size": "^2.0.1",
-    "truffle-typings": "^1.0.8"
+    "truffle-typings": "^1.0.8",
+    "web3": "^1.6.1"
   },
   "directories": {
     "test": "test"

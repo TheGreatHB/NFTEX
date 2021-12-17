@@ -58,7 +58,17 @@ contract AnconNFT is
     /**
      * @dev Mints a XDV Data Token
      */
-    function mint(address user, string memory uri) public returns (uint256) {
+    function mint(
+        address user, 
+        string memory uri,
+        //Onchain Metadata fields
+        string memory name, 
+        string memory description, 
+        string memory image, 
+        string memory owner, 
+        string memory parent, 
+        bytes memory sources
+        ) public returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();

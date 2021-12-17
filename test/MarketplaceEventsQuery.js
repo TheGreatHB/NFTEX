@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const Web3 = require("web3");
+require("@nomiclabs/hardhat-web3");
 require("dotenv").config();
 const AnconNFTjson = require("../artifacts/contracts/AnconNFT.sol/AnconNFT.json");
 const NFTEXjson = require("../artifacts/contracts/NFTEX.sol/NFTEX.json");
@@ -178,10 +178,9 @@ describe("NFTEX contract", function () {
         ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp)
       ).to.be.revertedWith("Duration must be more than zero");
 
-      // await anconNFT.approve(ex.address, 0);
-
-      // await ex.fixedPrice(anconNFT.address, 0, 50, 350);
-      // const hash = await _hash(anconNFT.address, 0, owner.address);
+      //await anconNFT.approve(ex.address, 0);
+      //await ex.fixedPrice(anconNFT.address, 0, 50, 350);
+      //const hash = await _hash(anconNFT.address, 0, owner.address);
 
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
       // expect(await ex.tokenOrderLength(anconNFT.address, 0)).to.equal(1);
@@ -192,22 +191,46 @@ describe("NFTEX contract", function () {
       // await advanceBlockTo("330");
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
 
-      // exWeb3 = new web3.eth.Contract(NFTEXjson.abi, ex.address);
-      let provider = ethers.getDefaultProvider();
-      let ethersContract = new ethers.Contract(
+      let provider = await ethers.getDefaultProvider();
+
+      let web3MarketContract = new web3.eth.Contract(NFTEXjson.abi, ex.address);
+      let web3NFTContract = new web3.eth.Contract(
+        AnconNFTjson.abi,
+        anconNFT.address
+      );
+      // console.log("Web3NFTContract", web3NFTContract)
+      let ethersMarketContract = new ethers.Contract(
         ex.address,
         NFTEXjson.abi,
-        provider
+        provider.currentProvider
       );
 
-      const response = await ethersContract.filters.MakeOrder();
-      // const response = await exWeb3.getPastEvents("MakeOrder", {
-      //   toBlock: "latest",
-      //   fromBlock: 0,
-      //   filter: { user: owner.address },
-      // });
+      const web3ResponseMO = await web3MarketContract.getPastEvents(
+        "MakeOrder",
+        {
+          toBlock: "latest",
+          fromBlock: 0,
+          filter: { user: owner.address },
+        }
+      );
 
-      console.log("Get past events response print", response);
+      const web3ResponseTransfer = await web3NFTContract.getPastEvents(
+        "Transfer",
+        {
+          toBlock: "latest",
+          fromBlock: 0,
+          filter: { user: owner.address },
+        }
+      );
+      console.log(
+        "'Make Order' Get past events Web3 response print",
+        web3ResponseMO.reverse()[0]
+      );
+
+      console.log(
+        "'Transfer' Get past events Web3 response print",
+        web3ResponseTransfer.reverse()[0]
+      );
     });
   });
 });

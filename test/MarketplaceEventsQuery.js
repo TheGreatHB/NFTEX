@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const Web3 = require("web3");
 require("dotenv").config();
-// const AnconNFT = require("../contracts/AnconNFT.sol/AnconNFT.json");
+const AnconNFTjson = require("../artifacts/contracts/AnconNFT.sol/AnconNFT.json");
 const NFTEXjson = require("../artifacts/contracts/NFTEX.sol/NFTEX.json");
 
 describe("NFTEX contract", function () {
@@ -16,7 +16,8 @@ describe("NFTEX contract", function () {
     addr3,
     addr4,
     AnconToken,
-    anconToken;
+    anconToken,
+    block;
 
   async function advanceBlockTo(blockNumber) {
     for (let i = await ethers.provider.getBlockNumber(); i < blockNumber; i++) {
@@ -157,20 +158,24 @@ describe("NFTEX contract", function () {
       await expect(ex.updateFeePercent(10300)).to.be.revertedWith(
         "input value is more than 100%"
       );
+      block = await ethers.provider.getBlock(
+        await ethers.provider.getBlockNumber()
+      );
+      console.log("Block Timestamp", block.timestamp);
     });
   });
 
   describe("Make Order", function () {
     it("Fixed Price", async function () {
       await expect(
-        ex.fixedPrice(anconNFT.address, 1, 50, 300)
+        ex.fixedPrice(anconNFT.address, 1, 50, block.timestamp + 20000)
       ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
 
       await advanceBlockTo("310");
       console.log("Debug");
 
       await expect(
-        ex.fixedPrice(anconNFT.address, 0, 50, 10)
+        ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp)
       ).to.be.revertedWith("Duration must be more than zero");
 
       // await anconNFT.approve(ex.address, 0);

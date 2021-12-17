@@ -36,7 +36,6 @@ contract NFTEX is ERC721Holder, Ownable {
   event Bid(IERC721 indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice);
   event Claim(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price);
 
-
   constructor(
     address tokenERC20,
     uint16 _feePercent) {
@@ -45,7 +44,6 @@ contract NFTEX is ERC721Holder, Ownable {
     feePercent = _feePercent;
     nativeCoin = IERC20(tokenERC20);
   }
-
 
   // view fx
   function getCurrentPrice(bytes32 _order) public view returns (uint256) {
@@ -72,7 +70,6 @@ contract NFTEX is ERC721Holder, Ownable {
     return orderIdBySeller[_seller].length;
   }
 
-
   // make order fx
   //0:Fixed Price, 1:Dutch Auction, 2:English Auction
   function dutchAuction(IERC721 _token, uint256 _id, uint256 _startPrice, uint256 _endPrice, uint256 _endBlock) public {
@@ -84,8 +81,8 @@ contract NFTEX is ERC721Holder, Ownable {
     _makeOrder(2, _token, _id, _startPrice, 0, _endBlock);
   } //ep=0. for gas saving.
 
-  function fixedPrice(IERC721 _token, uint256 _id, uint256 _price, uint256 _endBlock) public {
-    _makeOrder(0, _token, _id, _price, 0, _endBlock);
+  function fixedPrice(IERC721 _token, uint256 _id, uint256 _price, uint256 _endTimestamp) public {
+    _makeOrder(0, _token, _id, _price, 0, _endTimestamp);
   }  //ep=0. for gas saving.
 
   function _makeOrder(
@@ -94,13 +91,13 @@ contract NFTEX is ERC721Holder, Ownable {
     uint256 _id,
     uint256 _startPrice,
     uint256 _endPrice,
-    uint256 _endBlock
+    uint256 _endTimestamp
   ) internal {
-    require(_endBlock > block.timestamp, "Duration must be more than zero");
+    require(_endTimestamp > block.timestamp, "Duration must be more than zero");
 
     //push
     bytes32 hash = _hash(_token, _id, msg.sender);
-    orderInfo[hash] = Order(_orderType, msg.sender, _token, _id, _startPrice, _endPrice, block.timestamp, _endBlock, 0, address(0), false);
+    orderInfo[hash] = Order(_orderType, msg.sender, _token, _id, _startPrice, _endPrice, block.timestamp, _endTimestamp, 0, address(0), false);
     orderIdByToken[_token][_id].push(hash);
     orderIdBySeller[msg.sender].push(hash);
 

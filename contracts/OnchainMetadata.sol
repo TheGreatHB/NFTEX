@@ -7,8 +7,10 @@ contract OnchainMetadata {
     string name, 
     string description, 
     string image, 
-    string owner, 
+    address owner, 
     string parent, 
+    string category,
+    uint256 createdAt, 
     bytes sources
     );
 
@@ -20,12 +22,13 @@ contract OnchainMetadata {
     string memory name, 
     string memory description, 
     string memory image, 
-    string memory owner, 
-    string memory parent, 
+    address owner, 
+    string memory parent,
+    string memory category,
     bytes memory sources
   ) public{
 
-    emit AddOnchainMetadata(name, description, image, owner, parent, sources);
+    emit AddOnchainMetadata(name, description, image, owner, parent, category, block.timestamp, sources);
 
   }
 

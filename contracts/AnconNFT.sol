@@ -9,7 +9,8 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-// import "./ICredentialRegistry.sol";
+import "./OnchainMetadata.sol";
+//import "./ICredentialRegistry.sol";
 
 //  a NFT secure document
 contract AnconNFT is
@@ -17,9 +18,11 @@ contract AnconNFT is
     ERC721Pausable,
     ERC721URIStorage,
     Ownable,
-    IERC721Receiver
+    IERC721Receiver,
+    OnchainMetadata
 {
     using Counters for Counters.Counter;
+    // OnchainMetadata public onChainMetadata;
     Counters.Counter private _tokenIds;
     IERC20 public nativeCoin;
     address public verifierAddress;
@@ -65,8 +68,8 @@ contract AnconNFT is
         string memory name, 
         string memory description, 
         string memory image, 
-        string memory owner, 
-        string memory parent, 
+        string memory parent,
+        string memory category,
         bytes memory sources
         ) public returns (uint256) {
         _tokenIds.increment();
@@ -74,7 +77,7 @@ contract AnconNFT is
         uint256 newItemId = _tokenIds.current();
         _safeMint(user, newItemId);
         _setTokenURI(newItemId, uri);
-
+        setOnchainMetadata(name, description, image, msg.sender, parent, category, sources);
         return newItemId;
     }
 

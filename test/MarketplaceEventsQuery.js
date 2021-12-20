@@ -67,11 +67,11 @@ describe("NFTEX contract", function () {
     await anconNFT.mint(
       owner.address,
       0,
+      "Nombre",
+      "Descripcion ------------------------",
+      "cid/nombrearchivo.png",
       "",
-      "",
-      "",
-      "",
-      "",
+      "categoría",
       ethers.utils.hexlify(0)
     );
     console.log("Minting to owner");
@@ -177,10 +177,15 @@ describe("NFTEX contract", function () {
       await expect(
         ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp)
       ).to.be.revertedWith("Duration must be more than zero");
-
-      //await anconNFT.approve(ex.address, 0);
-      //await ex.fixedPrice(anconNFT.address, 0, 50, 350);
-      //const hash = await _hash(anconNFT.address, 0, owner.address);
+      
+      try {
+        await anconNFT.approve(ex.address, 0);
+        await ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp + 20000);
+        const hash = await _hash(anconNFT.address, 0, owner.address);
+        
+      } catch (error) {
+        console.log(error);
+      }
 
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
       // expect(await ex.tokenOrderLength(anconNFT.address, 0)).to.equal(1);
@@ -213,7 +218,8 @@ describe("NFTEX contract", function () {
           filter: { user: owner.address },
         }
       );
-
+      
+      //Mint Query event
       const web3ResponseTransfer = await web3NFTContract.getPastEvents(
         "Transfer",
         {
@@ -222,6 +228,16 @@ describe("NFTEX contract", function () {
           filter: { user: owner.address },
         }
       );
+
+      const web3ResponseSetOnchain = await web3NFTContract.getPastEvents(
+        "AddOnchainMetadata",
+        {
+          toBlock: "latest",
+          fromBlock: 0,
+          filter: { user: owner.address },
+        }
+      );
+
       console.log(
         "'Make Order' Get past events Web3 response print",
         web3ResponseMO.reverse()[0]
@@ -229,7 +245,12 @@ describe("NFTEX contract", function () {
 
       console.log(
         "'Transfer' Get past events Web3 response print",
-        web3ResponseTransfer.reverse()[0]
+        web3ResponseTransfer[0]
+      )
+      ;
+      console.log(
+        "'AddOnchainMetadata' Get past events Web3 response print",
+        web3ResponseSetOnchain
       );
     });
   });

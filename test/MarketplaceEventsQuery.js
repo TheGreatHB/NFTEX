@@ -3,7 +3,6 @@ const { ethers } = require("hardhat");
 require("@nomiclabs/hardhat-web3");
 require("dotenv").config();
 const AnconNFTjson = require("../artifacts/contracts/AnconNFT.sol/AnconNFT.json");
-const NFTEXjson = require("../artifacts/contracts/NFTEX.sol/NFTEX.json");
 
 describe("NFTEX contract", function () {
   let NFTEX,
@@ -74,12 +73,11 @@ describe("NFTEX contract", function () {
       "categoría",
       ethers.utils.hexlify(0)
     );
-    console.log("Minting to owner");
     await anconNFT.mint(
       addr1.address,
       1,
-      "",
-      "",
+      "Nombre2",
+      "Descripcion2 ------------------------",
       "",
       "",
       "",
@@ -88,8 +86,8 @@ describe("NFTEX contract", function () {
     await anconNFT.mint(
       addr1.address,
       11,
-      "",
-      "",
+      "Nombre3",
+      "Descripcion3 ------------------------",
       "",
       "",
       "",
@@ -98,8 +96,8 @@ describe("NFTEX contract", function () {
     await anconNFT.mint(
       addr2.address,
       2,
-      "",
-      "",
+      "Nombre4",
+      "Descripcion4 ------------------------",
       "",
       "",
       "",
@@ -109,8 +107,8 @@ describe("NFTEX contract", function () {
     await anconNFT.mint(
       addr4.address,
       1,
-      "",
-      "",
+      "Nombre5",
+      "Descripcion5 ------------------------",
       "",
       "",
       "",
@@ -165,6 +163,55 @@ describe("NFTEX contract", function () {
     });
   });
 
+  describe("Get at mint events", function () {
+    it("Print event log", async function () {
+
+      const web3NFTContract = new web3.eth.Contract(
+        AnconNFTjson.abi,
+        anconNFT.address
+      );
+
+      //Mint Query event
+      const transferEventLog = await web3NFTContract.getPastEvents("Transfer", {
+        toBlock: "latest",
+        fromBlock: 0,
+        filter: { user: owner.address },
+      });
+
+      const setOnchainEventLog = await web3NFTContract.getPastEvents(
+        "AddOnchainMetadata",
+        {
+          toBlock: "latest",
+          fromBlock: 0,
+          filter: { user: owner.address },
+        }
+      );
+
+      const setOnchainEventLogAll = await web3NFTContract.getPastEvents(
+        "AddOnchainMetadata",
+        {
+          toBlock: "latest",
+          fromBlock: 0,
+        }
+      );
+
+      console.log(
+        "'Transfer' Get past events Web3 response print",
+        transferEventLog[0]
+      );
+
+      console.log(
+        "'AddOnchainMetadata' from owner Get past events Web3 response print",
+        setOnchainEventLog
+      );
+
+      console.log(
+        "'AddOnchainMetadata' all Get past events Web3 response print",
+        setOnchainEventLogAll
+      );
+    });
+  });
+
   describe("Make Order", function () {
     it("Fixed Price", async function () {
       await expect(
@@ -177,15 +224,14 @@ describe("NFTEX contract", function () {
       await expect(
         ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp)
       ).to.be.revertedWith("Duration must be more than zero");
-      
-      try {
-        await anconNFT.approve(ex.address, 0);
-        await ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp + 20000);
-        const hash = await _hash(anconNFT.address, 0, owner.address);
-        
-      } catch (error) {
-        console.log(error);
-      }
+
+      // try {
+      //   await anconNFT.approve(ex.address, 0);
+      //   await ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp + 20000);
+      //   const hash = await _hash(anconNFT.address, 0, owner.address);
+      // } catch (error) {
+      //   console.log(error);
+      // }
 
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
       // expect(await ex.tokenOrderLength(anconNFT.address, 0)).to.equal(1);
@@ -195,63 +241,6 @@ describe("NFTEX contract", function () {
 
       // await advanceBlockTo("330");
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
-
-      let provider = await ethers.getDefaultProvider();
-
-      let web3MarketContract = new web3.eth.Contract(NFTEXjson.abi, ex.address);
-      let web3NFTContract = new web3.eth.Contract(
-        AnconNFTjson.abi,
-        anconNFT.address
-      );
-      // console.log("Web3NFTContract", web3NFTContract)
-      let ethersMarketContract = new ethers.Contract(
-        ex.address,
-        NFTEXjson.abi,
-        provider.currentProvider
-      );
-
-      const web3ResponseMO = await web3MarketContract.getPastEvents(
-        "MakeOrder",
-        {
-          toBlock: "latest",
-          fromBlock: 0,
-          filter: { user: owner.address },
-        }
-      );
-      
-      //Mint Query event
-      const web3ResponseTransfer = await web3NFTContract.getPastEvents(
-        "Transfer",
-        {
-          toBlock: "latest",
-          fromBlock: 0,
-          filter: { user: owner.address },
-        }
-      );
-
-      const web3ResponseSetOnchain = await web3NFTContract.getPastEvents(
-        "AddOnchainMetadata",
-        {
-          toBlock: "latest",
-          fromBlock: 0,
-          filter: { user: owner.address },
-        }
-      );
-
-      console.log(
-        "'Make Order' Get past events Web3 response print",
-        web3ResponseMO.reverse()[0]
-      );
-
-      console.log(
-        "'Transfer' Get past events Web3 response print",
-        web3ResponseTransfer[0]
-      )
-      ;
-      console.log(
-        "'AddOnchainMetadata' Get past events Web3 response print",
-        web3ResponseSetOnchain
-      );
     });
   });
 });

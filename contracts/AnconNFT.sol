@@ -28,6 +28,7 @@ contract AnconNFT is
     address public verifierAddress;
     uint256 public serviceFeeForPaymentAddress = 0;
     uint256 public serviceFeeForContract = 0;
+    uint256 public royaltyFeePercent;
 
     event Withdrawn(address indexed paymentAddress, uint256 amount);
 
@@ -70,14 +71,16 @@ contract AnconNFT is
         string memory image, 
         string memory parent,
         string memory category,
-        bytes memory sources
+        bytes memory sources,
+        uint256 _royaltyFeePercent //Must be from 0 to 10000, 1 = 0.01%, 10000 = 100.00%
         ) public returns (uint256) {
+        require(_royaltyFeePercent  <= 10000, "input value is more than 100%");
         _tokenIds.increment();
-
+        royaltyFeePercent = _royaltyFeePercent;
         uint256 newItemId = _tokenIds.current();
         _safeMint(user, newItemId);
         _setTokenURI(newItemId, uri);
-        setOnchainMetadata(name, description, image, msg.sender, parent, category, sources);
+        setOnchainMetadata(name, description, image, msg.sender, parent, category, sources, newItemId, royaltyFeePercent);
         return newItemId;
     }
 

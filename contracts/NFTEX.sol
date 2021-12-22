@@ -20,6 +20,8 @@ contract NFTEX is ERC721Holder, Ownable {
     uint256 lastBidPrice;
     address lastBidder;
     bool isSold;
+    address creator;
+    uint256 royaltyFeePercent;
   }
 
   mapping (IERC721 => mapping (uint256 => bytes32[])) public orderIdByToken;
@@ -74,15 +76,15 @@ contract NFTEX is ERC721Holder, Ownable {
   //0:Fixed Price, 1:Dutch Auction, 2:English Auction
   function dutchAuction(IERC721 _token, uint256 _id, uint256 _startPrice, uint256 _endPrice, uint256 _endBlock) public {
     require(_startPrice > _endPrice, "End price should be lower than start price");
-    _makeOrder(1, _token, _id, _startPrice, _endPrice, _endBlock);
+    _makeOrder(1, _token, _id, _startPrice, _endPrice, _endBlock, address(this), 0);
   }  //sp != ep
 
   function englishAuction(IERC721 _token, uint256 _id, uint256 _startPrice, uint256 _endBlock) public {
-    _makeOrder(2, _token, _id, _startPrice, 0, _endBlock);
+    _makeOrder(2, _token, _id, _startPrice, 0, _endBlock, address(this), 0);
   } //ep=0. for gas saving.
 
-  function fixedPrice(IERC721 _token, uint256 _id, uint256 _price, uint256 _endTimestamp) public {
-    _makeOrder(0, _token, _id, _price, 0, _endTimestamp);
+  function fixedPrice(IERC721 _token, uint256 _id, uint256 _price, uint256 _endTimestamp, address _creator, uint256 _royaltyFeePercent) public {
+    _makeOrder(0, _token, _id, _price, 0, _endTimestamp, _creator, _royaltyFeePercent);
   }  //ep=0. for gas saving.
 
   function _makeOrder(
@@ -91,13 +93,29 @@ contract NFTEX is ERC721Holder, Ownable {
     uint256 _id,
     uint256 _startPrice,
     uint256 _endPrice,
-    uint256 _endTimestamp
+    uint256 _endTimestamp,
+    address _creator,
+    uint256 _royaltyFeePercent
   ) internal {
     require(_endTimestamp > block.timestamp, "Duration must be more than zero");
-
+    require(_royaltyFeePercent  <= 10000, "input value is more than 100%");
     //push
     bytes32 hash = _hash(_token, _id, msg.sender);
-    orderInfo[hash] = Order(_orderType, msg.sender, _token, _id, _startPrice, _endPrice, block.timestamp, _endTimestamp, 0, address(0), false);
+    orderInfo[hash] = Order(
+        _orderType, 
+        msg.sender, 
+        _token, 
+        _id, 
+        _startPrice, 
+        _endPrice, 
+        block.timestamp, 
+        _endTimestamp, 
+        0, 
+        address(0), 
+        false, 
+        _creator, 
+        _royaltyFeePercent
+      );
     orderIdByToken[_token][_id].push(hash);
     orderIdBySeller[msg.sender].push(hash);
 
@@ -168,8 +186,14 @@ contract NFTEX is ERC721Holder, Ownable {
     o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
-    nativeCoin.transfer(o.seller, currentPrice - fee);
     nativeCoin.transfer(feeAddress, fee);
+    
+    //Royalty Fee payment
+    uint256 royaltyFee = currentPrice * o.royaltyFeePercent /10000;
+    nativeCoin.transfer(o.creator, royaltyFee);
+
+
+    nativeCoin.transfer(o.seller, currentPrice - fee - royaltyFee);
     
     // verificar utilizacion de token nativo del blockchain
     /* if (msg.value > currentPrice) {

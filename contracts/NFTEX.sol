@@ -156,8 +156,8 @@ contract NFTEX is ERC721Holder, Ownable {
     Order storage o = orderInfo[_order];
     uint256 endBlock = o.endBlock;
     require(endBlock != 0, "Canceled order");
-    require(endBlock > block.timestamp, "It's over");
-    require(o.orderType == 0, "It's not a fix price order");
+    require(endBlock > block.timestamp, "Its over");
+    require(o.orderType == 0, "Its not a fix price order");
     require(o.isSold == false, "Already sold");
 
     uint256 currentPrice = getCurrentPrice(_order);
@@ -168,7 +168,12 @@ contract NFTEX is ERC721Holder, Ownable {
     o.isSold = true;    //reentrancy proof
 
     uint256 fee = currentPrice * feePercent / 10000;
-    nativeCoin.transfer(o.seller, currentPrice - fee);
+    uint256 balance = nativeCoin.balanceOf(msg.sender);
+    uint256 payPrice = currentPrice - fee;
+    require(balance >= payPrice, "Sender balance is to low");
+    require(nativeCoin.allowance(msg.sender, address(this)) >= payPrice, "Balance not allowed");
+    nativeCoin.transferFrom(msg.sender, address(this), currentPrice);
+    nativeCoin.transfer(o.seller, payPrice);
     nativeCoin.transfer(feeAddress, fee);
     
     // verificar utilizacion de token nativo del blockchain

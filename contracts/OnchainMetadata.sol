@@ -11,7 +11,9 @@ contract OnchainMetadata {
     string parent, 
     string category,
     uint256 createdAt, 
-    bytes sources
+    bytes sources,
+    uint256 tokenId,
+    uint256 royaltyFee
     );
 
   constructor() {
@@ -25,10 +27,12 @@ contract OnchainMetadata {
     address owner, 
     string memory parent,
     string memory category,
-    bytes memory sources
+    bytes memory sources,
+    uint256 tokenId,
+    uint256 royaltyFee
   ) public{
 
-    emit AddOnchainMetadata(name, description, image, owner, parent, category, block.timestamp, sources);
+    emit AddOnchainMetadata(name, description, image, owner, parent, category, block.timestamp, sources, tokenId, royaltyFee);
 
   }
 

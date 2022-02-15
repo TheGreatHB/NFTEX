@@ -9,7 +9,8 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "./OnchainMetadata.sol";
+import "./MintInfo.sol";
+
 //import "./ICredentialRegistry.sol";
 
 //  a NFT secure document
@@ -19,7 +20,7 @@ contract AnconNFT is
     ERC721URIStorage,
     Ownable,
     IERC721Receiver,
-    OnchainMetadata
+    MintInfo
 {
     using Counters for Counters.Counter;
     // OnchainMetadata public onChainMetadata;
@@ -63,24 +64,17 @@ contract AnconNFT is
      * @dev Mints a XDV Data Token
      */
     function mint(
-        address user, 
-        string memory uri,
-        //Onchain Metadata fields
-        string memory name, 
-        string memory description, 
-        string memory image, 
-        string memory parent,
-        string memory category,
-        bytes memory sources,
+        address user,
+        string memory uri, //UUID
         uint256 _royaltyFeePercent //Must be from 0 to 10000, 1 = 0.01%, 10000 = 100.00%
-        ) public returns (uint256) {
-        require(_royaltyFeePercent  <= 10000, "input value is more than 100%");
+    ) public returns (uint256) {
+        require(_royaltyFeePercent <= 10000, "input value is more than 100%");
         _tokenIds.increment();
         royaltyFeePercent = _royaltyFeePercent;
         uint256 newItemId = _tokenIds.current();
         _safeMint(user, newItemId);
         _setTokenURI(newItemId, uri);
-        setOnchainMetadata(name, description, image, msg.sender, parent, category, sources, newItemId, royaltyFeePercent);
+        setMintInfo(user, uri, newItemId, _royaltyFeePercent);
         return newItemId;
     }
 
@@ -178,7 +172,7 @@ contract AnconNFT is
 
     function withdrawBalance(address payable payee) public onlyOwner {
         uint256 balance = nativeCoin.balanceOf(address(this));
-    
+
         require(nativeCoin.transfer(payee, balance), "XDV: Transfer failed");
 
         emit Withdrawn(payee, balance);

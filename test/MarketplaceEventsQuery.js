@@ -65,54 +65,29 @@ describe("NFTEX contract", function () {
 
     await anconNFT.mint(
       owner.address,
-      0,
-      "Nombre",
-      "Descripcion ------------------------",
-      "cid/nombrearchivo.png",
-      "",
-      "categoría",
-      ethers.utils.hexlify(0)
+      "d0ae3a5b-b86d-4227-9bec-e2438ab485ca", //UUID as uri
+      1 //royalty fee percent from 0 to 10000, 1 = 0.01%, 10000 = 100.00%
     );
     await anconNFT.mint(
       addr1.address,
-      1,
-      "Nombre2",
-      "Descripcion2 ------------------------",
-      "",
-      "",
-      "",
-      ethers.utils.hexlify(0)
+      "a67083c3-a36b-4956-baa0-c9239c75c582",
+      2
     );
     await anconNFT.mint(
       addr1.address,
-      11,
-      "Nombre3",
-      "Descripcion3 ------------------------",
-      "",
-      "",
-      "",
-      ethers.utils.hexlify(0)
+      "04030310-d8df-441a-89f6-44ab9c7dab19",
+      20
     );
     await anconNFT.mint(
       addr2.address,
-      2,
-      "Nombre4",
-      "Descripcion4 ------------------------",
-      "",
-      "",
-      "",
-      ethers.utils.hexlify(0)
+      "f9754447-70e3-440e-90a5-86e632dbb4c2",
+      100
     );
 
     await anconNFT.mint(
       addr4.address,
-      1,
-      "Nombre5",
-      "Descripcion5 ------------------------",
-      "",
-      "",
-      "",
-      ethers.utils.hexlify(0)
+      "866124d8-6c7b-4d50-8705-f7dea72e4695",
+      10000
     );
   });
 
@@ -165,7 +140,6 @@ describe("NFTEX contract", function () {
 
   describe("Get at mint events", function () {
     it("Print event log", async function () {
-
       const web3NFTContract = new web3.eth.Contract(
         AnconNFTjson.abi,
         anconNFT.address
@@ -179,7 +153,7 @@ describe("NFTEX contract", function () {
       });
 
       const setOnchainEventLog = await web3NFTContract.getPastEvents(
-        "AddOnchainMetadata",
+        "AddMintInfo",
         {
           toBlock: "latest",
           fromBlock: 0,
@@ -188,7 +162,7 @@ describe("NFTEX contract", function () {
       );
 
       const setOnchainEventLogAll = await web3NFTContract.getPastEvents(
-        "AddOnchainMetadata",
+        "AddMintInfo",
         {
           toBlock: "latest",
           fromBlock: 0,
@@ -196,17 +170,17 @@ describe("NFTEX contract", function () {
       );
 
       console.log(
-        "'Transfer' Get past events Web3 response print",
+        "\n 'Transfer' Get past events Web3 response print",
         transferEventLog[0]
       );
 
       console.log(
-        "'AddOnchainMetadata' from owner Get past events Web3 response print",
+        "\n 'AddMintInfo' from owner Get past events Web3 response print",
         setOnchainEventLog
       );
 
       console.log(
-        "'AddOnchainMetadata' all Get past events Web3 response print",
+        "\n 'AddMintInfo' all Get past events Web3 response print",
         setOnchainEventLogAll
       );
     });
@@ -214,7 +188,7 @@ describe("NFTEX contract", function () {
 
   describe("Make Order", function () {
     it("Fixed Price", async function () {
-      await expect(
+      /* await expect(
         ex.fixedPrice(anconNFT.address, 1, 50, block.timestamp + 20000)
       ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
 
@@ -223,8 +197,7 @@ describe("NFTEX contract", function () {
 
       await expect(
         ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp)
-      ).to.be.revertedWith("Duration must be more than zero");
-
+      ).to.be.revertedWith("Duration must be more than zero"); */
       // try {
       //   await anconNFT.approve(ex.address, 0);
       //   await ex.fixedPrice(anconNFT.address, 0, 50, block.timestamp + 20000);
@@ -232,13 +205,10 @@ describe("NFTEX contract", function () {
       // } catch (error) {
       //   console.log(error);
       // }
-
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
       // expect(await ex.tokenOrderLength(anconNFT.address, 0)).to.equal(1);
       // expect(await ex.sellerOrderLength(owner.address)).to.equal(1);
-
       // expect(await anconNFT.balanceOf(owner.address)).to.equal(0);
-
       // await advanceBlockTo("330");
       // expect(await ex.getCurrentPrice(hash)).to.equal(50);
     });

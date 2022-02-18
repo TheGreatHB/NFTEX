@@ -9,7 +9,7 @@ module.exports = {
   plugins: ["truffle-contract-size"],
   networks: {
     bsctestnet: {
-      provider: () => new HDWalletProvider(process.env.BSC_MNEMONIC, process.env.BSC_TESTNET),
+      provider: () => new HDWalletProvider(process.env.BSCTESTNET_MNEMONIC, process.env.RPC_URL_BSCTESTNET),
       network_id: 97,
       confirmations: 10,
       timeoutBlocks: 200,

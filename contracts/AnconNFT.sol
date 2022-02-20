@@ -22,6 +22,10 @@ contract AnconNFT is
     IERC721Receiver,
     MintInfo
 {
+    struct CreatorInfo {
+        address creator;
+        uint256 royaltyFee;
+    }
     using Counters for Counters.Counter;
     // OnchainMetadata public onChainMetadata;
     Counters.Counter private _tokenIds;
@@ -30,6 +34,7 @@ contract AnconNFT is
     uint256 public serviceFeeForPaymentAddress = 0;
     uint256 public serviceFeeForContract = 0;
     uint256 public royaltyFeePercent;
+    mapping (uint256 => CreatorInfo) public creators;
 
     event Withdrawn(address indexed paymentAddress, uint256 amount);
 
@@ -75,7 +80,16 @@ contract AnconNFT is
         _safeMint(user, newItemId);
         _setTokenURI(newItemId, uri);
         setMintInfo(user, uri, newItemId, _royaltyFeePercent);
+        creators[newItemId] = CreatorInfo(user,_royaltyFeePercent);
         return newItemId;
+    }
+
+    function getCreator(uint256 id) external view returns(address){
+        return creators[id].creator;
+    }
+
+    function getRoyaltyFee(uint256 id) external view returns(uint256){
+        return creators[id].royaltyFee;
     }
 
     /**

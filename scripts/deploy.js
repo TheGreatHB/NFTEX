@@ -18,7 +18,7 @@ async function main() {
   console.log('Owner', owner.address)
   // We get the contracts to deploy
   const NFTEX = await ethers.getContractFactory("NFTEX");
-  const AnconNFT = await ethers.getContractFactory("AnconNFT");
+  // const AnconNFT = await ethers.getContractFactory("AnconNFT");
   // const AnconToken = await ethers.getContractFactory("ANCON");
 
   console.log("Deploying NFTEX...");
@@ -27,21 +27,21 @@ async function main() {
   /* console.log("Deploying Ancon Token...");
   const anconToken = await AnconToken.connect(owner).deploy(); */
 
-  console.log("Deploying AnconNFT...");
+  /* console.log("Deploying AnconNFT...");
   const anconNFT = await AnconNFT.connect(owner).deploy(
     "AnconTestNFT",
     "AT",
     '0x2cFBD78C66f8c17B0104F31BDC6bA58941cab6A1',
     "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
-  );
+  ); */
 
   await ex.deployed();
   // await anconToken.deployed();
-  await anconNFT.deployed();
+  // await anconNFT.deployed();
 
   console.log("NFTEX contract deployed to:", ex.address);
   /* console.log("Ancon Token contract deployed to:", anconToken.address);*/
-  console.log("AnconNFT contract deployed to:", anconNFT.address); 
+  // console.log("AnconNFT contract deployed to:", anconNFT.address); 
 }
 
 // We recommend this pattern to be able to use async/await everywhere

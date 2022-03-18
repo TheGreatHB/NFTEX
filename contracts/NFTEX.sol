@@ -34,10 +34,10 @@ contract NFTEX is ERC721Holder, Ownable {
   uint16 public feePercent;
   IERC20 public nativeCoin;
 
-  event MakeOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri);
-  event CancelOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller);
-  event Bid(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice);
-  event Claim(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price);
+  event MakeOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri, uint256 timestamp, uint256 price);
+  event CancelOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri);
+  event Bid(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice, string uri);
+  event Claim(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price, string uri);
 
   constructor(
     address tokenERC20,
@@ -130,7 +130,7 @@ contract NFTEX is ERC721Holder, Ownable {
     // IERC721Metadata tokenStorage = _token;
     string memory uri = _token.tokenURI(_id);
 
-    emit MakeOrder(_token, _id, hash, msg.sender, uri);
+    emit MakeOrder(_token, _id, hash, msg.sender, uri, _endTimestamp, _startPrice);
   }
 
   function _hash(IERC721Metadata _token, uint256 _id, address _seller) internal view returns (bytes32) {
@@ -175,7 +175,7 @@ contract NFTEX is ERC721Holder, Ownable {
       payable(lastBidder).send(lastBidPrice);
     }
     
-    emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value);
+    emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value, o.token.tokenURI(o.tokenId));
   }
 
   function buyItNow(bytes32 _order) payable external {
@@ -223,7 +223,7 @@ contract NFTEX is ERC721Holder, Ownable {
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
 
-    emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice);
+    emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice, o.token.tokenURI(o.tokenId));
     //Save on Stats.sol
   }
 
@@ -251,7 +251,7 @@ contract NFTEX is ERC721Holder, Ownable {
     payable(feeAddress).send(fee);
     token.safeTransferFrom(address(this), lastBidder, tokenId);
 
-    emit Claim(token, tokenId, _order, seller, lastBidder, lastBidPrice);
+    emit Claim(token, tokenId, _order, seller, lastBidder, o.startPrice, o.token.tokenURI(o.tokenId));
     //Save on Stats.sol
   }
 
@@ -267,8 +267,10 @@ contract NFTEX is ERC721Holder, Ownable {
 
     o.endBlock = 0;   //0 endBlock means the order was canceled.
 
+    string memory uri = token.tokenURI(tokenId);
+
     token.safeTransferFrom(address(this), msg.sender, tokenId);
-    emit CancelOrder(token, tokenId, _order, msg.sender);
+    emit CancelOrder(token, tokenId, _order, msg.sender, uri);
   }
 
   //feeAddress must be either an EOA or a contract must have payable receive fx and doesn't have some codes in that fx.

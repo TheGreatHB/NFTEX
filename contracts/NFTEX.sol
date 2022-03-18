@@ -79,11 +79,11 @@ contract NFTEX is ERC721Holder, Ownable {
     _makeOrder(1, _token, _id, _startPrice, _endPrice, _endBlock);
   }  //sp != ep
 
-  function englishAuction(IERC721 _token, uint256 _id, uint256 _startPrice, uint256 _endBlock) public {
+  function englishAuction(IERC721Metadata _token, uint256 _id, uint256 _startPrice, uint256 _endBlock) public {
     _makeOrder(2, _token, _id, _startPrice, 0, _endBlock);
   } //ep=0. for gas saving.
 
-  function fixedPrice(IERC721 _token, uint256 _id, uint256 _price, uint256 _endTimestamp) public {
+  function fixedPrice(IERC721Metadata _token, uint256 _id, uint256 _price, uint256 _endTimestamp) public {
     _makeOrder(0, _token, _id, _price, 0, _endTimestamp);
   }  //ep=0. for gas saving.
 

@@ -3,7 +3,7 @@ pragma solidity =0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract NFTEX is ERC721Holder, Ownable {
@@ -11,7 +11,7 @@ contract NFTEX is ERC721Holder, Ownable {
   struct Order {
     uint8 orderType;  //0:Fixed Price, 1:Dutch Auction, 2:English Auction
     address seller;
-    IERC721 token;
+    IERC721Metadata token;
     uint256 tokenId;
     uint256 startPrice;
     uint256 endPrice;
@@ -24,7 +24,7 @@ contract NFTEX is ERC721Holder, Ownable {
     uint256 royaltyFeePercent;
   }
 
-  mapping (IERC721 => mapping (uint256 => bytes32[])) public orderIdByToken;
+  mapping (IERC721Metadata => mapping (uint256 => bytes32[])) public orderIdByToken;
   mapping (address => bytes32[]) public orderIdBySeller;
   mapping (bytes32 => Order) public orderInfo;
   // mapping (address => monto) public account;
@@ -33,10 +33,10 @@ contract NFTEX is ERC721Holder, Ownable {
   uint16 public feePercent;
   IERC20 public nativeCoin;
 
-  event MakeOrder(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller);
-  event CancelOrder(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller);
-  event Bid(IERC721 indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice);
-  event Claim(IERC721 indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price);
+  event MakeOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri, uint256 timestamp, uint256 price);
+  event CancelOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri);
+  event Bid(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice, string uri);
+  event Claim(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price, string uri);
 
   constructor(
     address tokenERC20,
@@ -64,7 +64,7 @@ contract NFTEX is ERC721Holder, Ownable {
     }
   }
 
-  function tokenOrderLength(IERC721 _token, uint256 _id) external view returns (uint256) {
+  function tokenOrderLength(IERC721Metadata _token, uint256 _id) external view returns (uint256) {
     return orderIdByToken[_token][_id].length;
   }
 
@@ -74,7 +74,7 @@ contract NFTEX is ERC721Holder, Ownable {
 
   // make order fx
   //0:Fixed Price, 1:Dutch Auction, 2:English Auction
-  function dutchAuction(IERC721 _token, uint256 _id, uint256 _startPrice, uint256 _endPrice, uint256 _endBlock) public {
+  function dutchAuction(IERC721Metadata _token, uint256 _id, uint256 _startPrice, uint256 _endPrice, uint256 _endBlock) public {
     require(_startPrice > _endPrice, "End price should be lower than start price");
     _makeOrder(1, _token, _id, _startPrice, _endPrice, _endBlock);
   }  //sp != ep
@@ -89,7 +89,7 @@ contract NFTEX is ERC721Holder, Ownable {
 
   function _makeOrder(
     uint8 _orderType,
-    IERC721 _token,
+    IERC721Metadata _token,
     uint256 _id,
     uint256 _startPrice,
     uint256 _endPrice,
@@ -124,10 +124,13 @@ contract NFTEX is ERC721Holder, Ownable {
     //check if seller has a right to transfer the NFT token. safeTransferFrom.
     _token.safeTransferFrom(msg.sender, address(this), _id);
 
-    emit MakeOrder(_token, _id, hash, msg.sender);
+    // IERC721Metadata tokenStorage = _token;
+    string memory uri = _token.tokenURI(_id);
+
+    emit MakeOrder(_token, _id, hash, msg.sender, uri, _endTimestamp, _startPrice);
   }
 
-  function _hash(IERC721 _token, uint256 _id, address _seller) internal view returns (bytes32) {
+  function _hash(IERC721Metadata _token, uint256 _id, address _seller) internal view returns (bytes32) {
     return keccak256(abi.encodePacked(block.timestamp, _token, _id, _seller));
   }
   
@@ -169,7 +172,7 @@ contract NFTEX is ERC721Holder, Ownable {
       payable(lastBidder).send(lastBidPrice);
     }
     
-    emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value);
+    emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value, o.token.tokenURI(o.tokenId));
   }
 
   function buyItNow(bytes32 _order) payable external {
@@ -217,7 +220,7 @@ contract NFTEX is ERC721Holder, Ownable {
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
 
-    emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice);
+    emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice, o.token.tokenURI(o.tokenId));
     //Save on Stats.sol
   }
 
@@ -233,7 +236,7 @@ contract NFTEX is ERC721Holder, Ownable {
     require(o.orderType == 2, "This function is for English Auction");
     require(block.number > o.endBlock, "Not yet");
 
-    IERC721 token = o.token;
+    IERC721Metadata token = o.token;
     uint256 tokenId = o.tokenId;
     uint256 lastBidPrice = o.lastBidPrice;
 
@@ -245,7 +248,7 @@ contract NFTEX is ERC721Holder, Ownable {
     payable(feeAddress).send(fee);
     token.safeTransferFrom(address(this), lastBidder, tokenId);
 
-    emit Claim(token, tokenId, _order, seller, lastBidder, lastBidPrice);
+    emit Claim(token, tokenId, _order, seller, lastBidder, o.startPrice, o.token.tokenURI(o.tokenId));
     //Save on Stats.sol
   }
 
@@ -256,13 +259,15 @@ contract NFTEX is ERC721Holder, Ownable {
     require(o.lastBidPrice == 0, "Bidding exist"); //for EA. but even in DA, FP, seller can withdraw his/her token with this fx.
     require(o.isSold == false, "Already sold");
 
-    IERC721 token = o.token;
+    IERC721Metadata token = o.token;
     uint256 tokenId = o.tokenId;
 
     o.endBlock = 0;   //0 endBlock means the order was canceled.
 
+    string memory uri = token.tokenURI(tokenId);
+
     token.safeTransferFrom(address(this), msg.sender, tokenId);
-    emit CancelOrder(token, tokenId, _order, msg.sender);
+    emit CancelOrder(token, tokenId, _order, msg.sender, uri);
   }
 
   //feeAddress must be either an EOA or a contract must have payable receive fx and doesn't have some codes in that fx.

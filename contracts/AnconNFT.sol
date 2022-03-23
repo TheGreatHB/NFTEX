@@ -3,10 +3,8 @@ pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./MintInfo.sol";
@@ -16,10 +14,8 @@ import "./MintInfo.sol";
 //  a NFT secure document
 contract AnconNFT is
     ERC721Burnable,
-    ERC721Pausable,
     ERC721URIStorage,
     Ownable,
-    IERC721Receiver,
     MintInfo
 {
     struct CreatorInfo {
@@ -66,7 +62,10 @@ contract AnconNFT is
     }
 
     /**
-     * @dev Mints a XDV Data Token
+     * @dev Mints a XDV Data Token+
+     * @param user 
+     * @param uri Uuid generated on the front end with the uuidv4 library. Uuids are used as a general index.
+     * @param _royaltyFeePercent
      */
     function mint(
         address user,
@@ -93,38 +92,6 @@ contract AnconNFT is
     }
 
     /**
-     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
-     * by `operator` from `from`, this function is called.
-     *
-     * It must return its Solidity selector to confirm the token transfer.
-     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
-     *
-     * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
-     */
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external override returns (bytes4) {
-        // Verify operator
-        require(operator == verifierAddress, "Invalid verifier");
-
-        // Verify owner owns token id
-        address owned = ownerOf(tokenId);
-        require(owned == from, "Invalid token id owner");
-        (string memory _metadata, uint256 _tokenId) = abi.decode(
-            data,
-            (string, uint256)
-        );
-        require(bytes(_metadata).length == 0, "Empty metadata");
-
-        // set metadata URI
-        _setTokenURI(_tokenId, _metadata);
-        return this.onERC721Received.selector;
-    }
-
-    /**
      * @dev Just overrides the superclass' function. Fixes inheritance
      * source: https://forum.openzeppelin.com/t/how-do-inherit-from-erc721-erc721enumerable-and-erc721uristorage-in-v4-of-openzeppelin-contracts/6656/4
      */
@@ -146,42 +113,6 @@ contract AnconNFT is
         returns (string memory)
     {
         return super.tokenURI(tokenId);
-    }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override(ERC721, ERC721Pausable) {
-        require(!paused(), "XDV: Token execution is paused");
-
-        if (from == address(0)) {
-            paymentBeforeMint(msg.sender);
-        }
-
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
-    /**
-     * @dev tries to execute the payment when the token is minted.
-     * Reverts if the payment procedure could not be completed.
-     */
-    function paymentBeforeMint(address tokenHolder) internal virtual {
-        // Transfer tokens to pay service fee
-        require(
-            nativeCoin.transferFrom(
-                tokenHolder,
-                address(this),
-                serviceFeeForContract
-            ),
-            "XDV: Transfer failed for recipient"
-        );
-
-        emit ServiceFeePaid(
-            tokenHolder,
-            serviceFeeForContract,
-            serviceFeeForPaymentAddress
-        );
     }
 
     function withdrawBalance(address payable payee) public onlyOwner {

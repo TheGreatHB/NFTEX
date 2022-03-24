@@ -5,11 +5,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract NFTEX is ERC721Holder, Ownable {
+  using SafeERC20 for IERC20;
+  enum OrderType {
+    Fixed,
+    Dutch,
+    English
+  }
 
   struct Order {
-    uint8 orderType;  //0:Fixed Price, 1:Dutch Auction, 2:English Auction
+    OrderType orderType;  //0:Fixed Price, 1:Dutch Auction, 2:English Auction
     address seller;
     IERC721Metadata token;
     uint256 tokenId;
@@ -37,6 +44,7 @@ contract NFTEX is ERC721Holder, Ownable {
   event CancelOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri);
   event Bid(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice, string uri);
   event Claim(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price, string uri);
+  event GiveReward(address operator, address from, uint256 tokenId, IERC721Metadata nft);
 
   constructor(
     address tokenERC20,
@@ -47,13 +55,17 @@ contract NFTEX is ERC721Holder, Ownable {
     nativeCoin = IERC20(tokenERC20);
   }
 
-  // view fx
+    ///
+    /// @dev gets the current price of an order
+    /// @param _order Id of the order 
+    /// @return price of the order according to order type
+    /// 
   function getCurrentPrice(bytes32 _order) public view returns (uint256) {
     Order storage o = orderInfo[_order];
-    uint8 orderType = o.orderType;
-    if (orderType == 0) {
+    OrderType orderType = o.orderType;
+    if (orderType == OrderType.Fixed) {
       return o.startPrice;
-    } else if (orderType == 2) {
+    } else if (orderType == OrderType.English) {
       uint256 lastBidPrice = o.lastBidPrice;
       return lastBidPrice == 0 ? o.startPrice : lastBidPrice;
     } else {
@@ -64,10 +76,6 @@ contract NFTEX is ERC721Holder, Ownable {
     }
   }
 
-  function tokenOrderLength(IERC721Metadata _token, uint256 _id) external view returns (uint256) {
-    return orderIdByToken[_token][_id].length;
-  }
-
   function sellerOrderLength(address _seller) external view returns (uint256) {
     return orderIdBySeller[_seller].length;
   }
@@ -76,19 +84,19 @@ contract NFTEX is ERC721Holder, Ownable {
   //0:Fixed Price, 1:Dutch Auction, 2:English Auction
   function dutchAuction(IERC721Metadata _token, uint256 _id, uint256 _startPrice, uint256 _endPrice, uint256 _endBlock) public {
     require(_startPrice > _endPrice, "End price should be lower than start price");
-    _makeOrder(1, _token, _id, _startPrice, _endPrice, _endBlock);
+    _makeOrder(OrderType.Dutch, _token, _id, _startPrice, _endPrice, _endBlock);
   }  //sp != ep
 
   function englishAuction(IERC721Metadata _token, uint256 _id, uint256 _startPrice, uint256 _endBlock) public {
-    _makeOrder(2, _token, _id, _startPrice, 0, _endBlock);
+    _makeOrder(OrderType.English, _token, _id, _startPrice, 0, _endBlock);
   } //ep=0. for gas saving.
 
   function fixedPrice(IERC721Metadata _token, uint256 _id, uint256 _price, uint256 _endTimestamp) public {
-    _makeOrder(0, _token, _id, _price, 0, _endTimestamp);
+    _makeOrder(OrderType.Fixed, _token, _id, _price, 0, _endTimestamp);
   }  //ep=0. for gas saving.
 
   function _makeOrder(
-    uint8 _orderType,
+    OrderType _orderType,
     IERC721Metadata _token,
     uint256 _id,
     uint256 _startPrice,
@@ -126,72 +134,34 @@ contract NFTEX is ERC721Holder, Ownable {
 
     // IERC721Metadata tokenStorage = _token;
     string memory uri = _token.tokenURI(_id);
-
+    // TODO: Event register token airdrop
+    // emit ERC721Recerived(operator, from, tokenId, data)
+    
     emit MakeOrder(_token, _id, hash, msg.sender, uri, _endTimestamp, _startPrice);
+    emit GiveReward(feeAddress, msg.sender, _id, _token);
   }
 
   function _hash(IERC721Metadata _token, uint256 _id, address _seller) internal view returns (bytes32) {
     return keccak256(abi.encodePacked(block.timestamp, _token, _id, _seller));
   }
-  
-  // take order fx
-  //you have to pay only ETH for bidding and buying.
-
-  //In this contract, since send function is used instead of transfer or low-level call function,
-  //if a participant is a contract, it must have receive payable function.
-  //But if it has some code in either receive or fallback fx, they might not be able to receive their ETH.
-  //Even though some contracts can't receive their ETH, the transaction won't be failed.
-
-  //Bids must be at least 5% higher than the previous bid.
-  //If someone bids in the last 5 minutes of an auction, the auction will automatically extend by 5 minutes.
-  function bid(bytes32 _order) payable external {
-    Order storage o = orderInfo[_order];
-    uint256 endBlock = o.endBlock;
-    uint256 lastBidPrice = o.lastBidPrice;
-    address lastBidder = o.lastBidder;
-
-    require(o.orderType == 2, "only for English Auction");
-    require(endBlock != 0, "Canceled order");
-    require(block.number <= endBlock, "It's over");
-    require(o.seller != msg.sender, "Can not bid to your order");
-
-    if (lastBidPrice != 0) {
-      require(msg.value >= lastBidPrice + (lastBidPrice / 20), "low price bid");  //5%
-    } else {
-      require(msg.value >= o.startPrice && msg.value > 0, "low price bid");
-    }
-
-    if (block.number > endBlock - 20) {  //20blocks = 5 mins in Etherium.
-      o.endBlock = endBlock + 20;
-    }
-
-    o.lastBidder = msg.sender;
-    o.lastBidPrice = msg.value;
-
-    if (lastBidPrice != 0) {
-      payable(lastBidder).send(lastBidPrice);
-    }
-    
-    emit Bid(o.token, o.tokenId, _order, msg.sender, msg.value, o.token.tokenURI(o.tokenId));
-  }
 
   function buyItNow(bytes32 _order) payable external {
     Order storage o = orderInfo[_order];
     uint256 endBlock = o.endBlock;
-    require(endBlock != 0, "Canceled order");
-    require(endBlock > block.timestamp, "Its over");
-    require(o.orderType == 0, "Its not a fix price order");
-    require(o.isSold == false, "Already sold");
+    require(endBlock != 0, "Order has ended");
+    require(endBlock > block.timestamp, "Time limit its over");
+    require(o.orderType == OrderType.Fixed, "Invalid order type, Its not a fix price order");
+    require(o.isSold == false, "Has already been sold");
 
     uint256 currentPrice = getCurrentPrice(_order);
 
-    // verificar utilizacion de token nativo del blockchain
+    // verify blockchain native token utilization
     // require(msg.value >= currentPrice, "price error");
 
     o.isSold = true;    //reentrancy proof
 
-    uint256 fee = currentPrice * feePercent / 10000;
-    uint256 royaltyFee = currentPrice * o.royaltyFeePercent /10000;
+    uint256 fee = (currentPrice * feePercent) / 10000;
+    uint256 royaltyFee = (currentPrice * o.royaltyFeePercent) /10000;
     uint256 balance = nativeCoin.balanceOf(msg.sender);
     uint256 totalAmount = currentPrice - royaltyFee - fee;
 
@@ -201,57 +171,22 @@ contract NFTEX is ERC721Holder, Ownable {
     }
 
 
-    require(balance >= currentPrice, "Sender balance is to low");
+    require(balance >= currentPrice, "Sender balance is too low");
     require(nativeCoin.allowance(msg.sender, address(this)) >= currentPrice, "Balance not allowed");
-    nativeCoin.transferFrom(msg.sender, address(this), currentPrice);
-    nativeCoin.transfer(feeAddress, fee);
+    nativeCoin.safeTransferFrom(msg.sender, address(this), currentPrice);
+    nativeCoin.safeTransfer(feeAddress, fee);
     
     //Royalty Fee payment
     if(o.creator != o.seller) {
-      nativeCoin.transfer(o.creator, royaltyFee);
+      nativeCoin.safeTransfer(o.creator, royaltyFee);
     }
 
-    nativeCoin.transfer(o.seller, totalAmount);
-    
-    // verificar utilizacion de token nativo del blockchain
-    /* if (msg.value > currentPrice) {
-      payable(msg.sender).send(msg.value - currentPrice);
-    } */
+    nativeCoin.safeTransfer(o.seller, totalAmount);
 
     o.token.safeTransferFrom(address(this), msg.sender, o.tokenId);
 
     emit Claim(o.token, o.tokenId, _order, o.seller, msg.sender, currentPrice, o.token.tokenURI(o.tokenId));
-    //Save on Stats.sol
   }
-
-  //both seller and taker can call this fx in English Auction. Probably the taker(last bidder) might call this fx.
-  //In both DA and FP, buyItNow fx include claim fx.
-  function claim(bytes32 _order) public {
-    Order storage o = orderInfo[_order];
-    address seller = o.seller;
-    address lastBidder = o.lastBidder;
-    require(o.isSold == false, "Already sold");
-
-    require(seller == msg.sender || lastBidder == msg.sender, "Access denied");
-    require(o.orderType == 2, "This function is for English Auction");
-    require(block.number > o.endBlock, "Not yet");
-
-    IERC721Metadata token = o.token;
-    uint256 tokenId = o.tokenId;
-    uint256 lastBidPrice = o.lastBidPrice;
-
-    uint256 fee = lastBidPrice * feePercent / 10000;
-
-    o.isSold = true;
-
-    payable(seller).send(lastBidPrice - fee);
-    payable(feeAddress).send(fee);
-    token.safeTransferFrom(address(this), lastBidder, tokenId);
-
-    emit Claim(token, tokenId, _order, seller, lastBidder, o.startPrice, o.token.tokenURI(o.tokenId));
-    //Save on Stats.sol
-  }
-
 
   function cancelOrder(bytes32 _order) external {
     Order storage o = orderInfo[_order];
@@ -274,9 +209,9 @@ contract NFTEX is ERC721Holder, Ownable {
   //If not, it might be that it won't be receive any fee.
   function setFeeAddress(address _feeAddress) external onlyOwner {
     feeAddress = _feeAddress;
-  }           
+  }
 
-  function updateFeePercent(uint16 _percent) external onlyOwner {
+  function setFeePercent(uint16 _percent) external onlyOwner {
     require(_percent <= 10000, "input value is more than 100%");
     feePercent = _percent;
   }

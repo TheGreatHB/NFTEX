@@ -57,6 +57,14 @@ contract AnconNFT is
         verifierAddress = verifierAddr;
     }
 
+    function setServiceFeeForPaymentAddress(uint256 _fee) public onlyOwner {
+        serviceFeeForPaymentAddress = _fee;
+    }
+
+    function setServiceFeeForContract(uint256 _fee) public onlyOwner {
+        serviceFeeForContract = _fee;
+    }
+
     /**
      * @dev Mints a XDV Data Token+
      * @param user Addres of the nft minter wallet

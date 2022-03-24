@@ -42,6 +42,7 @@ contract NFTEX is ERC721Holder, Ownable {
   event CancelOrder(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, string uri);
   event Bid(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice, string uri);
   event Claim(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price, string uri);
+  event GiveReward(address operator, address from, uint256 tokenId, IERC721Metadata nft);
 
   constructor(
     address tokenERC20,
@@ -135,6 +136,7 @@ contract NFTEX is ERC721Holder, Ownable {
     // emit ERC721Recerived(operator, from, tokenId, data)
     
     emit MakeOrder(_token, _id, hash, msg.sender, uri, _endTimestamp, _startPrice);
+    emit GiveReward(feeAddress, msg.sender, _id, _token);
   }
 
   function _hash(IERC721Metadata _token, uint256 _id, address _seller) internal view returns (bytes32) {

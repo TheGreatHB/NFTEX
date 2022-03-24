@@ -63,14 +63,14 @@ contract AnconNFT is
 
     /**
      * @dev Mints a XDV Data Token+
-     * @param user 
+     * @param user Addres of the nft minter wallet
      * @param uri Uuid generated on the front end with the uuidv4 library. Uuids are used as a general index.
-     * @param _royaltyFeePercent
+     * @param _royaltyFeePercent Royalty fee percentage, must be between 0 to 10000, 1 = 0.01%, 10000 = 100.00%
      */
     function mint(
         address user,
-        string memory uri, //UUID
-        uint256 _royaltyFeePercent //Must be from 0 to 10000, 1 = 0.01%, 10000 = 100.00%
+        string memory uri,
+        uint256 _royaltyFeePercent
     ) public returns (uint256) {
         require(_royaltyFeePercent <= 10000, "input value is more than 100%");
         _tokenIds.increment();

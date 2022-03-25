@@ -45,6 +45,7 @@ contract NFTEX is ERC721Holder, Ownable {
   event Bid(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address bidder, uint256 bidPrice, string uri);
   event Claim(IERC721Metadata indexed token, uint256 id, bytes32 indexed hash, address seller, address taker, uint256 price, string uri);
   event GiveReward(address operator, address from, uint256 tokenId, IERC721Metadata nft);
+  event Withdrawn(address indexed paymentAddress, uint256 amount);
 
   constructor(
     address tokenERC20,
@@ -214,6 +215,14 @@ contract NFTEX is ERC721Holder, Ownable {
   function setFeePercent(uint16 _percent) external onlyOwner {
     require(_percent <= 10000, "input value is more than 100%");
     feePercent = _percent;
+  }
+
+  function withdrawBalance(address payable payee) public onlyOwner {
+    uint256 balance = nativeCoin.balanceOf(address(this));
+
+    require(nativeCoin.transfer(payee, balance), "NFTEX: Transfer failed");
+
+    emit Withdrawn(payee, balance);
   }
 
 }
